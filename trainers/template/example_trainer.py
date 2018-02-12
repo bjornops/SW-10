@@ -1,6 +1,8 @@
-from base.base_train import BaseTrain
-from tqdm import tqdm
 import numpy as np
+from tqdm import tqdm
+
+from base.template.base_train import BaseTrain
+
 
 class ExampleTrainer(BaseTrain):
     def __init__(self, sess, model, data, config,logger):

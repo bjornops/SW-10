@@ -1,16 +1,17 @@
+import os
 import threading
+from time import sleep
+
 # import multiprocessing  #only used if we want workercount = cpu count
 import tensorflow as tf
-from models.strategic_network_model import StrategicNetwork
-from models.tactical_network_model import TacticalNetwork
-from trainers.sw9_worker import Worker
-import os
-
-
-from time import sleep
 from absl import app
+from models.sw9_tactical_network_model import TacticalNetwork
 # from absl import flags # substitute for gflags something.
 from pysc2.lib import actions as scActions
+
+from models.template.sw9_strategic_network_model import StrategicNetwork
+from trainers.template.sw9_worker import Worker
+
 
 def _main(unused_argv):
 
@@ -22,7 +23,7 @@ def _main(unused_argv):
     # Exploration prob
     exploration = 0.4
     # multiprocessing.cpu_count(), use this if you want worker count = cpu count
-    workerCount = 3
+    workerCount = 1
     # Number of feature layers to include, make sure this fits with utilities/addFeatureLayers
     numberOfFeatures = 7
     # learningRate
@@ -43,10 +44,9 @@ def _main(unused_argv):
     # whether to load a previously trained model
     loadModel = False
 
-    # Dont worry too much about these
     numberOfActions = len(scActions.FUNCTIONS)
     if hier:
-        numberOfActions = 5
+        numberOfActions = 5  # TODO Maybe add to config
 
     # path to save model
     modelPath = "C:/pysc/models/" + mapName + testID
@@ -71,7 +71,7 @@ def startWorkers(totalEpisodes, gamma, screenSize, numberOfActions, loadModel, m
     # Use CPU:0 for setup work
     with tf.device("/cpu:0"):
         # global counter of episodes
-        globalEpisodes = tf.Variable(0,dtype=tf.int32,name='globalEpisodes',trainable=False)
+        globalEpisodes = tf.Variable(0, dtype=tf.int32, name='globalEpisodes', trainable=False)
 
         if hier:
             # Generate global network
@@ -91,37 +91,37 @@ def startWorkers(totalEpisodes, gamma, screenSize, numberOfActions, loadModel, m
         if loadModel:
             vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'global')
             if hier:
-                dictMain = {mapName + '/sconv1/weights:0' : vars[0],
-                            mapName + '/sconv1/biases:0' : vars[1],
-                            mapName + '/sconv2/weights:0' : vars[2],
-                            mapName + '/sconv2/biases:0' : vars[3],
-                            mapName + '/info_fc/weights:0' : vars[4],
-                            mapName + '/info_fc/biases:0' : vars[5],
-                            mapName + '/genFc/weights:0' : vars[6],
-                            mapName + '/genFc/biases:0' : vars[7],
-                            mapName + '/feat_fc/weights:0' : vars[8],
-                            mapName + '/feat_fc/biases:0' : vars[9],
-                            mapName + '/non_spatial_action/weights:0' : vars[10],
-                            mapName + '/non_spatial_action/biases:0' : vars[11],
-                            mapName + '/value/weights:0' : vars[12],
-                            mapName + '/value/biases:0' : vars[13]}
+                dictMain = {mapName + '/sconv1/weights:0': vars[0],
+                            mapName + '/sconv1/biases:0': vars[1],
+                            mapName + '/sconv2/weights:0': vars[2],
+                            mapName + '/sconv2/biases:0': vars[3],
+                            mapName + '/info_fc/weights:0': vars[4],
+                            mapName + '/info_fc/biases:0': vars[5],
+                            mapName + '/genFc/weights:0': vars[6],
+                            mapName + '/genFc/biases:0': vars[7],
+                            mapName + '/feat_fc/weights:0': vars[8],
+                            mapName + '/feat_fc/biases:0': vars[9],
+                            mapName + '/non_spatial_action/weights:0': vars[10],
+                            mapName + '/non_spatial_action/biases:0': vars[11],
+                            mapName + '/value/weights:0': vars[12],
+                            mapName + '/value/biases:0': vars[13]}
             else:
-                dictMain = {mapName + '/sconv1/weights:0' : vars[0],
-                            mapName + '/sconv1/biases:0' : vars[1],
-                            mapName + '/sconv2/weights:0' : vars[2],
-                            mapName + '/sconv2/biases:0' : vars[3],
-                            mapName + '/info_fc/weights:0' : vars[4],
-                            mapName + '/info_fc/biases:0' : vars[5],
-                            mapName + '/genFc/weights:0' : vars[6],
-                            mapName + '/genFc/biases:0' : vars[7],
-                            mapName +'/spPol/weights:0' : vars[8],
-                            mapName +'/spPol/biases:0' : vars[9],
-                            mapName + '/feat_fc/weights:0' : vars[10],
-                            mapName + '/feat_fc/biases:0' : vars[11],
-                            mapName + '/non_spatial_action/weights:0' : vars[12],
-                            mapName + '/non_spatial_action/biases:0' : vars[13],
-                            mapName + '/value/weights:0' : vars[14],
-                            mapName + '/value/biases:0' : vars[15]}
+                dictMain = {mapName + '/sconv1/weights:0': vars[0],
+                            mapName + '/sconv1/biases:0': vars[1],
+                            mapName + '/sconv2/weights:0': vars[2],
+                            mapName + '/sconv2/biases:0': vars[3],
+                            mapName + '/info_fc/weights:0': vars[4],
+                            mapName + '/info_fc/biases:0': vars[5],
+                            mapName + '/genFc/weights:0': vars[6],
+                            mapName + '/genFc/biases:0': vars[7],
+                            mapName + '/spPol/weights:0': vars[8],
+                            mapName + '/spPol/biases:0': vars[9],
+                            mapName + '/feat_fc/weights:0': vars[10],
+                            mapName + '/feat_fc/biases:0': vars[11],
+                            mapName + '/non_spatial_action/weights:0': vars[12],
+                            mapName + '/non_spatial_action/biases:0': vars[13],
+                            mapName + '/value/weights:0': vars[14],
+                            mapName + '/value/biases:0': vars[15]}
 
         if hier:
             tactNetwork = TacticalNetwork(screenSize, len(scActions.FUNCTIONS),"HHExpandArmy2", numberOfFeatures,
@@ -235,13 +235,12 @@ def startWorkers(totalEpisodes, gamma, screenSize, numberOfActions, loadModel, m
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as session:
 
-        #set_session(tf.Session(config=config))
         if hier:
-            saver1 = tf.train.Saver(var_list=dict ,max_to_keep=10)
-            saver2 = tf.train.Saver(var_list=dict2 ,max_to_keep=10)
-            saver3 = tf.train.Saver(var_list=dict3 ,max_to_keep=10)
-            saver4 = tf.train.Saver(var_list=dict4 ,max_to_keep=10)
-            saver5 = tf.train.Saver(var_list=dict5 ,max_to_keep=10)
+            saver1 = tf.train.Saver(var_list=dict, max_to_keep=10)
+            saver2 = tf.train.Saver(var_list=dict2, max_to_keep=10)
+            saver3 = tf.train.Saver(var_list=dict3, max_to_keep=10)
+            saver4 = tf.train.Saver(var_list=dict4, max_to_keep=10)
+            saver5 = tf.train.Saver(var_list=dict5, max_to_keep=10)
         if loadModel:
             saverMain = tf.train.Saver(var_list=dictMain,max_to_keep=10)
 

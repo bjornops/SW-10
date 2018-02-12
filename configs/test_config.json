@@ -1,0 +1,17 @@
+{
+  "map_name": "BuildMarines",
+  "test_id": "Black",
+  "exp_name": "test",
+  "total_episodes": 2000,
+  "gamma": 0.99,
+  "exploration": 0.4,
+  "worker_count": 1,
+  "feature_count": 7,
+  "learning_rate": 0.0001,
+  "value_factor": 2,
+  "entropy": 0,
+  "buffer_size": 80,
+  "screen_size": 64,
+  "stepMul": 8,
+  "max_to_keep": 12
+}
