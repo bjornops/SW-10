@@ -1,5 +1,6 @@
-from base.base_model import BaseModel
 import tensorflow as tf
+
+from base.template.base_model import BaseModel
 
 
 class ExampleModel(BaseModel):
@@ -27,5 +28,5 @@ class ExampleModel(BaseModel):
 
 
     def init_saver(self):
-        # here you initalize the tensorflow saver that will be used in saving the checkpoints.
+        # here you initialize the tensorflow saver that will be used in saving the checkpoints.
         pass
