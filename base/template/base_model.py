@@ -41,5 +41,5 @@ class BaseModel:
         # self.saver = tf.train.Saver(max_to_keep=self.config.max_to_keep)
         raise NotImplementedError
 
-    def build_model(self, number_of_actions, scope_id):
+    def build_model(self):
         raise NotImplementedError

@@ -1,6 +1,4 @@
-from base.base_train import BaseTrain
-from tqdm import tqdm
-import numpy as np
+from base.template.base_train import BaseTrain
 
 
 class TemplateTrainer(BaseTrain):
