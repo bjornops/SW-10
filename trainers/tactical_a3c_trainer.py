@@ -2,9 +2,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+
 import math
 import numpy as np
 import tensorflow as tf
+from base.base_train import BaseTrain
 from models.tactical_network import TacticalNetwork
 from pysc2.env import sc2_env
 from pysc2.lib import actions as scActions
@@ -12,9 +14,9 @@ from pysc2.lib import actions as scActions
 from utils.sw9_utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures
 
 
-class TacticalWorker:
-    def __init__(self, workerID, config, globalEpisodes):
-
+class TacticalTrainer(BaseTrain):
+    def __init__(self, workerID, config, globalEpisodes, sess, model, data, logger):
+        super(TacticalTrainer, self).__init__(sess, model, data, config, logger)
         self.config = config
 
         self.name = workerID
@@ -22,6 +24,8 @@ class TacticalWorker:
         self.increment = self.globalEpisodes.assign_add(1)
         self.episodeRewards = []
         self.episodeMeans = []
+        self.session = sess
+        self.number_of_actions = len(scActions.FUNCTIONS)
 
         # Tensorflow summary writer (for tensorboard)
         # self.summaryWriter = tf.summary.FileWriter("log/train" + mapName + testID + "-" + str(self.number))
@@ -44,7 +48,7 @@ class TacticalWorker:
 
         self.env = game
 
-    def train(self, experienceBuffer, session, gamma, numberOfActions, val, lr):
+    def train(self, experienceBuffer, val, lr):
         experienceBuffer = np.array(experienceBuffer)
 
         # Splitting of experience
@@ -68,9 +72,9 @@ class TacticalWorker:
         # stores the picked spatial action(i[1]) for each experience tuple
         selectedSpatialAction = np.zeros([bufferSize, self.screenSize ** 2], dtype=np.float32)
         # stores which actions were valid at a given time
-        validActions = np.zeros([bufferSize, numberOfActions], dtype=np.float32)
+        validActions = np.zeros([bufferSize, self.number_of_actions], dtype=np.float32)
         # stores which action was selected at a given time
-        selectedAction = np.zeros([bufferSize, numberOfActions], dtype=np.float32)
+        selectedAction = np.zeros([bufferSize, self.number_of_actions], dtype=np.float32)
         # stores which action was selected at a given time
         actionMem = np.zeros([bufferSize, 1], dtype=np.float32)
 
@@ -95,14 +99,14 @@ class TacticalWorker:
             # set action chosen during this timestep
             selectedAction[t, actions[t][0]] = 1
             # stores valid actions for a specific timestep
-            actionInfo = np.zeros([1, numberOfActions], dtype=np.float32)
+            actionInfo = np.zeros([1, self.number_of_actions], dtype=np.float32)
             # sets valid actions for current timestep
             actionInfo[0, actions[t][1]] = 1
             actionInfos.append(actionInfo)
             actionMem[t] = prevActions[t]
 
         for t in range(bufferSize - 2, -1, -1):
-            valueTarget[t] = rewards[t] + gamma * valueTarget[t + 1]
+            valueTarget[t] = rewards[t] + self.config.gamma * valueTarget[t + 1]
 
         # changes dimensions from [buffersize, 1, NB_actions] to [buffersize, NB_actions]
         actionInfos = np.concatenate(actionInfos, axis=0)
@@ -122,7 +126,7 @@ class TacticalWorker:
                      self.localNetwork.previousActions: actionMem}
 
         # Generate statistics from our network to periodically save and start the network feed
-        valueLoss, policyLoss, gradientNorms, variableNorms, _ = session.run([self.localNetwork.valueLoss,
+        valueLoss, policyLoss, gradientNorms, variableNorms, _ = self.session.run([self.localNetwork.valueLoss,
                                                                               self.localNetwork.policyLoss,
                                                                               self.localNetwork.gradNorms,
                                                                               self.localNetwork.varNorms,
@@ -131,123 +135,126 @@ class TacticalWorker:
         # Returns statistics for our summary writer
         return valueLoss / len(experienceBuffer), policyLoss / len(experienceBuffer), gradientNorms, variableNorms
 
-    def work(self, totalEpisodes, gamma, session, threadCoordinator, numberOfActions,
-             maxBufferSize, learningRate):
-        episodeCount = session.run(self.globalEpisodes)  # gets current global episode
+    def work(self, threadCoordinator):
+        self.episodeCount = self.session.run(self.globalEpisodes)  # gets current global episode
         print("Starting worker '" + str(self.name) + "'")
 
-        with session.as_default(), session.graph.as_default():
-            # Each episode
+        with self.session.as_default(), self.session.graph.as_default():
             while not threadCoordinator.should_stop():
-                # reset local network to global network (updateVars = vars of global network)
-                session.run(self.updateVars)
-                # store experience tuples
+                self.train_epoch()
+
+
+    # Each episode
+    def train_epoch(self):
+
+        # reset local network to global network (updateVars = vars of global network)
+        self.session.run(self.updateVars)
+        # store experience tuples
+        experienceBuffer = []
+        # Store values
+        episodeValues = []
+        # Store Rewards
+        episodeReward = 0
+        # Is the minigame over?
+        done = False
+
+        # Reset minigame
+        obs = self.env.reset()
+        self.previousAction = np.zeros([1, 1], dtype=np.float32)
+
+        # each step
+        while not done:
+            # perform step, return exp
+            exp, done, screen, actionInfo, obs = self.train_step(obs)
+            experienceBuffer.append(exp)
+
+            episodeValues.append(exp[3])
+            episodeReward += exp[2]
+
+            if len(experienceBuffer) == self.config.buffer_size and not done:
+                # we dont know what our final return is, so we bootstrap from our current value estimation.
+                val = self.session.run(self.localNetwork.value,
+                                       feed_dict={self.localNetwork.screen: screen,
+                                                  self.localNetwork.actionInfo: actionInfo,
+                                                  self.localNetwork.generalFeatures: experienceBuffer[-1][5],
+                                                  self.localNetwork.buildQueue: experienceBuffer[-1][6],
+                                                  self.localNetwork.selection: experienceBuffer[-1][7],
+                                                  })[
+                    0]  # self.localNetwork.previousActions: self.previousAction})[0]
+                lr = self.config.learning_rate * (1 - 0.5 * self.episodeCount / self.config.total_episodes)
+                valueLoss, policyLoss, gradientNorms, variableNorms = self.train(experienceBuffer, self.config.gamma,
+                                                                                 val, lr)
                 experienceBuffer = []
-                # Store values
-                episodeValues = []
-                # Store Rewards
-                episodeReward = 0
-                # Is the minigame over?
-                done = False
+                self.session.run(self.updateVars)
+            if done:
+                break
 
-                # Reset minigame
-                obs = self.env.reset()
-                self.previousAction = np.zeros([1, 1], dtype=np.float32)
+        # When done == true
+        self.episodeRewards.append(episodeReward)
+        self.episodeMeans.append(np.mean(episodeValues))
+        print("Episode: " + str(self.episodeCount) + " Reward: " + str(episodeReward))
 
-                # each step
-                while not done:
-                    # perform step, return exp
-                    exp, done, screen, actionInfo, obs = self.step(session, numberOfActions, obs)
-                    experienceBuffer.append(exp)
+        # Update the network using the experience buffer at the end of the episode.
+        if len(experienceBuffer) != 0:
+            lr = self.config.learning_rate * (1 - 0.5 * self.episodeCount / self.config.total_episodes)
+            valueLoss, policyLoss, gradientNorms, variableNorms = self.train(experienceBuffer,
+                                                                             self.config.gamma, 0, lr)
 
-                    episodeValues.append(exp[3])
-                    episodeReward += exp[2]
+        # save model and statistics.
+        if self.episodeCount != 0:
+            # makes sure only one of our workers saves the model
+            if self.episodeCount % 25 == 0 and self.name == 'worker_0':
+                globalVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'global')
+                dict = {self.mapName + '/sconv1/weights:0': globalVars[0],
+                        self.mapName + '/sconv1/biases:0': globalVars[1],
+                        self.mapName + '/sconv2/weights:0': globalVars[2],
+                        self.mapName + '/sconv2/biases:0': globalVars[3],
+                        self.mapName + '/info_fc/weights:0': globalVars[4],
+                        self.mapName + '/info_fc/biases:0': globalVars[5],
+                        self.mapName + '/genFc/weights:0': globalVars[6],
+                        self.mapName + '/genFc/biases:0': globalVars[7],
+                        self.mapName + '/spPol/weights:0': globalVars[8],
+                        self.mapName + '/spPol/biases:0': globalVars[9],
+                        self.mapName + '/feat_fc/weights:0': globalVars[10],
+                        self.mapName + '/feat_fc/biases:0': globalVars[11],
+                        self.mapName + '/non_spatial_action/weights:0': globalVars[12],
+                        self.mapName + '/non_spatial_action/biases:0': globalVars[13],
+                        self.mapName + '/value/weights:0': globalVars[14],
+                        self.mapName + '/value/biases:0': globalVars[15]}
+                saver = tf.train.Saver(dict)
+                saver.save(self.session, self.modelPath + '/model-' + str(self.episodeCount) + '.cptk')
+                print("Model Saved..")
 
-                    if len(experienceBuffer) == maxBufferSize and not done:
-                        # we dont know what our final return is, so we bootstrap from our current value estimation.
-                        val = session.run(self.localNetwork.value,
-                                          feed_dict={self.localNetwork.screen: screen,
-                                                     self.localNetwork.actionInfo: actionInfo,
-                                                     self.localNetwork.generalFeatures: experienceBuffer[-1][5],
-                                                     self.localNetwork.buildQueue: experienceBuffer[-1][6],
-                                                     self.localNetwork.selection: experienceBuffer[-1][7],
-                                                     })[
-                            0]  # self.localNetwork.previousActions: self.previousAction})[0]
-                        lr = learningRate * (1 - 0.5 * episodeCount / totalEpisodes)
-                        valueLoss, policyLoss, gradientNorms, variableNorms = self.train(experienceBuffer,
-                                                                                         session, gamma,
-                                                                                         numberOfActions,
-                                                                                         val, lr)
-                        experienceBuffer = []
-                        session.run(self.updateVars)
-                    if done:
-                        break
+            meanReward = np.mean(self.episodeRewards[-1:])
+            meanValue = np.mean(self.episodeMeans[-1:])
+            summary = tf.Summary()
+            summary.value.add(tag='Reward', simple_value=float(meanReward))
+            summary.value.add(tag='Value', simple_value=float(meanValue))
+            summary.value.add(tag='Value Loss', simple_value=float(valueLoss))
+            summary.value.add(tag='Policy Loss', simple_value=float(policyLoss))
+            summary.value.add(tag='Grad Norm Loss', simple_value=float(gradientNorms))
+            summary.value.add(tag='Var Norm Loss', simple_value=float(variableNorms))
+            self.summaryWriter.add_summary(summary, self.episodeCount)
 
-                # When done == true
-                self.episodeRewards.append(episodeReward)
-                self.episodeMeans.append(np.mean(episodeValues))
-                print("Episode: " + str(episodeCount) + " Reward: " + str(episodeReward))
-                # Update the network using the experience buffer at the end of the episode.
-                if len(experienceBuffer) != 0:
-                    lr = learningRate * (1 - 0.5 * episodeCount / totalEpisodes)
-                    valueLoss, policyLoss, gradientNorms, variableNorms = self.train(experienceBuffer, session,
-                                                                                     gamma, numberOfActions, 0, lr)
+            self.summaryWriter.flush()  # flushes to disk
 
-                # save model and statistics.
-                if episodeCount != 0:
-                    # makes sure only one of our workers saves the model
-                    if episodeCount % 25 == 0 and self.name == 'worker_0':
-                        globalVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'global')
-                        dict = {self.mapName + '/sconv1/weights:0': globalVars[0],
-                                self.mapName + '/sconv1/biases:0': globalVars[1],
-                                self.mapName + '/sconv2/weights:0': globalVars[2],
-                                self.mapName + '/sconv2/biases:0': globalVars[3],
-                                self.mapName + '/info_fc/weights:0': globalVars[4],
-                                self.mapName + '/info_fc/biases:0': globalVars[5],
-                                self.mapName + '/genFc/weights:0': globalVars[6],
-                                self.mapName + '/genFc/biases:0': globalVars[7],
-                                self.mapName + '/spPol/weights:0': globalVars[8],
-                                self.mapName + '/spPol/biases:0': globalVars[9],
-                                self.mapName + '/feat_fc/weights:0': globalVars[10],
-                                self.mapName + '/feat_fc/biases:0': globalVars[11],
-                                self.mapName + '/non_spatial_action/weights:0': globalVars[12],
-                                self.mapName + '/non_spatial_action/biases:0': globalVars[13],
-                                self.mapName + '/value/weights:0': globalVars[14],
-                                self.mapName + '/value/biases:0': globalVars[15]}
-                        saver = tf.train.Saver(dict)
-                        saver.save(session, self.modelPath + '/model-' + str(episodeCount) + '.cptk')
-                        print("Model Saved..")
+        if self.name == 'worker_0':  # TODO Maybe fix later.
+            self.session.run(self.increment)
 
-                    meanReward = np.mean(self.episodeRewards[-1:])
-                    meanValue = np.mean(self.episodeMeans[-1:])
-                    summary = tf.Summary()
-                    summary.value.add(tag='Reward', simple_value=float(meanReward))
-                    summary.value.add(tag='Value', simple_value=float(meanValue))
-                    summary.value.add(tag='Value Loss', simple_value=float(valueLoss))
-                    summary.value.add(tag='Policy Loss', simple_value=float(policyLoss))
-                    summary.value.add(tag='Grad Norm Loss', simple_value=float(gradientNorms))
-                    summary.value.add(tag='Var Norm Loss', simple_value=float(variableNorms))
-                    self.summaryWriter.add_summary(summary, episodeCount)
+        self.episodeCount += 1
 
-                    self.summaryWriter.flush()  # flushes to disk
-
-                if self.name == 'worker_0':  # TODO Maybe fix later.
-                    session.run(self.increment)
-
-                episodeCount += 1
-
-    def step(self, session, numberOfActions, obs):
+    def train_step(self, obs):
         # add feature layers
         screen = addFeatureLayers(obs[0])
 
         # run session and get policies
-        actionInfo = np.zeros([1, numberOfActions], dtype=np.float32)
+        actionInfo = np.zeros([1, self.number_of_actions], dtype=np.float32)
         # list of available actions
         actionInfo[0, getAvailableActions(obs[0])] = 1
 
         genFeatures, bQueue, selection = addGeneralFeatures(obs[0])
 
-        actionPolicy, value = session.run([self.localNetwork.actionPolicy, self.localNetwork.value],
+        actionPolicy, value = self.session.run([self.localNetwork.actionPolicy, self.localNetwork.value],
                                           feed_dict={self.localNetwork.screen: screen,
                                                      self.localNetwork.actionInfo: actionInfo,
                                                      self.localNetwork.generalFeatures: genFeatures,
@@ -256,7 +263,7 @@ class TacticalWorker:
                                                      self.localNetwork.previousActions: self.previousAction})
 
         # Select action from policies
-        action, actionExp, spatialAction = self.selectAction(actionPolicy, obs[0], screen, session, genFeatures,
+        action, actionExp, spatialAction = self.selectAction(actionPolicy, obs[0], screen, genFeatures,
                                                                  bQueue, selection)
 
         obs = self.env.step(action)  # Perform action on environment
@@ -276,7 +283,8 @@ class TacticalWorker:
         return [screen, actionExp, reward, value[0], spatialAction, genFeatures, bQueue, selection, actionMem], done, \
                screen, actionInfo, obs,
 
-    def selectAction(self, actionPolicy, obs, screen, session, genFeatures, bQueue, selection):
+
+    def selectAction(self, actionPolicy, obs, screen, genFeatures, bQueue, selection):
 
         # Find action
 
@@ -296,7 +304,7 @@ class TacticalWorker:
         else:
             act_id = vActions[np.argmax(actionPolicy[vActions])]
 
-        spatialPolicy = session.run([self.localNetwork.spatialPolicy],
+        spatialPolicy = self.session.run([self.localNetwork.spatialPolicy],
                                     feed_dict={self.localNetwork.screen: screen,
                                                self.localNetwork.generalFeatures: genFeatures,
                                                self.localNetwork.buildQueue: bQueue,
