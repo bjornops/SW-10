@@ -12,6 +12,6 @@
   "entropy": 0,
   "buffer_size": 80,
   "screen_size": 64,
-  "stepMul": 8,
+  "step_mul": 8,
   "max_to_keep": 12
 }
