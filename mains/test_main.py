@@ -11,14 +11,14 @@ from models.tactical_network import TacticalNetwork
 from trainers.tactical_a3c_trainer import TacticalTrainer
 from utils.logger import Logger
 from absl import app
+import sys
 
 
-def main():
+def main(argv):
     # capture the config path from the run arguments
     # then process the json configration file
     try:
-        args = get_args()
-        config = process_config(args.config)
+        config = process_config("../configs/test_config.json")
 
     except:
         print("missing or invalid arguments")
@@ -58,7 +58,7 @@ def worker_handler(sess, trainer, model, config):
         # keep n last saved models
 
     # Initialize global variables
-    sess.run(tf.global_variables_initializer()) 
+    sess.run(tf.global_variables_initializer())
 
     # tf class for simple coordinating of threads
     thread_coordinator = tf.train.Coordinator()
