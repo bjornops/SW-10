@@ -66,8 +66,8 @@ def worker_handler(sess, trainer, model, config):
     # Start the work function of each worker in seperate threads.
     worker_threads = []
     for worker in workers:
-        #sets up thread with args for function
-        worker_thread = threading.Thread(target=worker.work, args=(thread_coordinator))
+        # sets up thread with args for function
+        worker_thread = threading.Thread(target=worker.work, args=(thread_coordinator,))
         worker_thread.start()
         sleep(0.5)
         worker_threads.append(worker_thread)
