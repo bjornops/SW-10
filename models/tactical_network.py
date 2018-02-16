@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 from base.base_model import BaseModel
+import os
 
 
 class TacticalNetwork(BaseModel):
@@ -12,6 +13,29 @@ class TacticalNetwork(BaseModel):
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.
         self.saver = tf.train.Saver(max_to_keep=self.config.max_to_keep)
+
+    def save(self, sess):
+        print("Saving model...")
+        globalVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'global')
+        dict = {self.config.map_name + '/sconv1/weights:0': globalVars[0],
+                self.config.map_name + '/sconv1/biases:0': globalVars[1],
+                self.config.map_name + '/sconv2/weights:0': globalVars[2],
+                self.config.map_name + '/sconv2/biases:0': globalVars[3],
+                self.config.map_name + '/info_fc/weights:0': globalVars[4],
+                self.config.map_name + '/info_fc/biases:0': globalVars[5],
+                self.config.map_name + '/genFc/weights:0': globalVars[6],
+                self.config.map_name + '/genFc/biases:0': globalVars[7],
+                self.config.map_name + '/spPol/weights:0': globalVars[8],
+                self.config.map_name + '/spPol/biases:0': globalVars[9],
+                self.config.map_name + '/feat_fc/weights:0': globalVars[10],
+                self.config.map_name + '/feat_fc/biases:0': globalVars[11],
+                self.config.map_name + '/non_spatial_action/weights:0': globalVars[12],
+                self.config.map_name + '/non_spatial_action/biases:0': globalVars[13],
+                self.config.map_name + '/value/weights:0': globalVars[14],
+                self.config.map_name + '/value/biases:0': globalVars[15]}
+        saver = tf.train.Saver(dict)
+        saver.save(sess, self.config.checkpoint_dir + '/model-' + str(self.global_step_tensor) + '.cptk')
+        print("Model Saved")
 
     def build_model(self, number_of_actions, scope_id):
         with tf.variable_scope(scope_id):
@@ -122,16 +146,15 @@ class TacticalNetwork(BaseModel):
                 self.loss = self.policyLoss + self.config.value_factor * self.valueLoss + self.config.entropy * self.entropyLoss
 
                 optimizer = tf.train.RMSPropOptimizer(self.learningRate, decay=0.99, epsilon=1e-10)
-
-                optimizer = tf.train.RMSPropOptimizer(self.learningRate, decay=0.99, epsilon=1e-10)
                 # Get gradients from local network using local losses
                 localVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope_id)
                 self.gradients = optimizer.compute_gradients(self.loss, localVars)
                 self.varNorms = tf.global_norm(localVars)
-                grads = []
+
+                self.grads = []
                 for grad, _ in self.gradients:
                     grad = tf.clip_by_norm(grad, 10.0)
-                    grads.append(grad)
+                    self.grads.append(grad)
                 # Apply local gradients to global network
                 globalVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'global')
-                self.applyGrads = optimizer.apply_gradients(zip(grads, globalVars))
+                self.applyGrads = optimizer.apply_gradients(zip(self.grads, globalVars))
