@@ -127,7 +127,8 @@ class TacticalTrainer(BaseTrain):
                      self.localNetwork.generalFeatures: np.vstack(genFeatures),
                      self.localNetwork.buildQueue: np.vstack(obsBuild),
                      self.localNetwork.selection: np.vstack(selections),
-                     self.localNetwork.previousActions: actionMem}
+                     # self.localNetwork.previousActions: actionMem
+                     }
 
         # Generate statistics from our network to periodically save and start the network feed
         valueLoss, policyLoss, gradientNorms, variableNorms, _ = self.session.run([self.localNetwork.valueLoss,
@@ -247,7 +248,8 @@ class TacticalTrainer(BaseTrain):
                                                      self.localNetwork.generalFeatures: genFeatures,
                                                      self.localNetwork.buildQueue: bQueue,
                                                      self.localNetwork.selection: selection,
-                                                     self.localNetwork.previousActions: self.previousAction})
+                                                     # self.localNetwork.previousActions: self.previousAction
+                                                     })
 
         # Select action from policies
         action, actionExp, spatialAction = self.selectAction(actionPolicy, obs[0], screen, genFeatures,
@@ -296,7 +298,8 @@ class TacticalTrainer(BaseTrain):
                                                self.localNetwork.generalFeatures: genFeatures,
                                                self.localNetwork.buildQueue: bQueue,
                                                self.localNetwork.selection: selection,
-                                               self.localNetwork.previousActions: self.previousAction})
+                                               # self.localNetwork.previousActions: self.previousAction
+                                               })
         # Find spatial action
         spatialAction = np.ravel(spatialPolicy)  # flatten
         spaction = np.random.choice((64 * 64), 1, p=spatialAction)
