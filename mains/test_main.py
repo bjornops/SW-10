@@ -34,7 +34,8 @@ def main(argv):
     sess = tf.Session(config=sess_config)
 
     # create instance of the model you want
-    model = TacticalNetwork(config, "global")
+    global_network_reference = TacticalNetwork(config, "global")  # exists in the TF session
+    model = TacticalNetwork(config, "worker_0_scope")
     # create your data generator
     data = DataGenerator(config)
     # create tensorboard logger
