@@ -1,6 +1,6 @@
 import tensorflow as tf
 import os
-from tqdm import tqdm
+# from tqdm import tqdm
 import numpy as np
 
 
@@ -12,7 +12,7 @@ class BaseTrain:
         self.sess = sess
         self.data = data
         self.init = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
-        self.sess.run(self.init)
+        # self.sess.run(self.init)
 
 
     def train(self):

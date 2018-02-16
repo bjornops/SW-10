@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 import tensorflow as tf
-from models.sw9_tactical_network_model import TacticalNetwork
+from models.template.sw9_tactical_network_model import TacticalNetwork
 from pysc2.env import sc2_env
 from pysc2.lib import actions as scActions
 
