@@ -7,7 +7,7 @@ import os
 class TacticalNetwork(BaseModel):
     def __init__(self, config, scope_id):
         super(TacticalNetwork, self).__init__(config)
-        self.build_model(number_of_actions=5, scope_id=scope_id)
+        self.build_model(number_of_actions=524, scope_id=scope_id)  # TODO solve number of actions
         self.init_saver()
 
     def init_saver(self):
