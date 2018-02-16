@@ -9,11 +9,7 @@ import tensorflow as tf
 from base.base_train import BaseTrain
 from pysc2.env import sc2_env
 from pysc2.lib import actions as scActions
-
 from utils.sw9_utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures
-
-
-import absl as flags
 
 
 class TacticalTrainer(BaseTrain):

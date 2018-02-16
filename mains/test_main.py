@@ -10,6 +10,7 @@ from models.tactical_network import TacticalNetwork
 # from trainers.example_trainer import ExampleTrainer
 from trainers.tactical_a3c_trainer import TacticalTrainer
 from utils.logger import Logger
+from absl import app
 
 
 def main():
@@ -57,7 +58,7 @@ def worker_handler(sess, trainer, model, config):
         # keep n last saved models
 
     # Initialize global variables
-    sess.run(tf.global_variables_initializer())
+    sess.run(tf.global_variables_initializer()) 
 
     # tf class for simple coordinating of threads
     thread_coordinator = tf.train.Coordinator()
@@ -76,4 +77,4 @@ def worker_handler(sess, trainer, model, config):
 
 
 if __name__ == '__main__':
-    main()
+    app.run(main)
