@@ -35,27 +35,37 @@ def main(argv):
 
     # create instance of the model you want
     global_network_reference = TacticalNetwork(config, "global")  # exists in the TF session
-    model = TacticalNetwork(config, "worker_0_scope")
+    models = []
+    for i in range(config.worker_count):
+        model = TacticalNetwork(config, "worker_" + str(i) + "_scope")
+        model.init_worker_calc_variables()
+        models.append(model)
+
+
     # create your data generator
-    data = DataGenerator(config)
+    data = DataGenerator(config)  # TODO Remove?
+
     # create tensorboard logger
     logger = Logger(sess, config)
     # create trainer and path all previous components to it
-    trainer = TacticalTrainer("worker_0", config, sess, model, data, logger)
+    trainers = []
+    for i in range(config.worker_count):
+        trainer = TacticalTrainer("worker_" + str(i), config, sess, models[i], data, logger)
+        trainers.append(trainer)
 
     # here you train your model
     #trainer.train()
-    worker_handler(sess, trainer, model, config)
+    worker_handler(sess, trainers, config)
 
 
-def worker_handler(sess, trainer, model, config):
+def worker_handler(sess, trainers, config):
     data = 0
     logger = 0
     workers = []
 
     # Create workers
     for i in range(config.worker_count):
-        workers.append(trainer)
+        workers.append(trainers[i])
         # keep n last saved models
 
     # Initialize global variables
@@ -64,7 +74,7 @@ def worker_handler(sess, trainer, model, config):
     # tf class for simple coordinating of threads
     thread_coordinator = tf.train.Coordinator()
 
-    # Start the work function of each worker in seperate threads.
+    # Start the work function of each worker in separate threads.
     worker_threads = []
     for worker in workers:
         # sets up thread with args for function
