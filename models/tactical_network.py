@@ -7,8 +7,10 @@ import os
 class TacticalNetwork(BaseModel):
     def __init__(self, config, scope_id):
         super(TacticalNetwork, self).__init__(config)
-        self.build_model(number_of_actions=524, scope_id=scope_id)  # TODO solve number of actions
+        self.number_of_actions = 524  # TODO solve number of actions
+        self.scope_id = scope_id
         self.init_saver()
+        self.build_model()
 
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.
@@ -37,12 +39,12 @@ class TacticalNetwork(BaseModel):
         saver.save(sess, self.config.checkpoint_dir + '/model-' + str(self.global_step_tensor) + '.cptk')
         print("Model Saved")
 
-    def build_model(self, number_of_actions, scope_id):
-        with tf.variable_scope(scope_id):
+    def build_model(self):
+        with tf.variable_scope(self.scope_id):
             # Extract features
             self.screen = tf.placeholder(tf.float32, [None, self.config.feature_count, self.config.screen_size,
                                                       self.config.screen_size], name='screen')
-            self.actionInfo = tf.placeholder(tf.float32, [None, number_of_actions], name='actionInfo')
+            self.actionInfo = tf.placeholder(tf.float32, [None, self.number_of_actions], name='actionInfo')
             self.generalFeatures = tf.placeholder(tf.float32, [None, 11], name='generalFeatures')
             self.buildQueue = tf.placeholder(tf.float32, [None, 5, 7], name='bQueue')
             self.selection = tf.placeholder(tf.float32, [None, 20, 7], name='selection')
@@ -93,7 +95,7 @@ class TacticalNetwork(BaseModel):
 
             # Output layers for policy and value estimations
             self.actionPolicy = layers.fully_connected(featFc,
-                                                       num_outputs=number_of_actions,
+                                                       num_outputs=self.number_of_actions,
                                                        activation_fn=tf.nn.softmax,
                                                        scope='non_spatial_action')
 
@@ -102,59 +104,57 @@ class TacticalNetwork(BaseModel):
                                                            activation_fn=None,
                                                            scope='value'), [-1])
 
-            # Only the worker network need ops for loss functions and gradient updating. We also exclude tactical networks for hier
-            if scope_id != 'global' and scope_id != 'HHExpandArmy2' and scope_id != 'HHBuildBarracks' and scope_id != 'HHAssignSCV' and scope_id != 'HHBuildSupply' and scope_id != 'HHBuildSCV':
-
-                # stores which actions were valid at a given time
-                self.validActions = tf.placeholder(tf.float32, [None, number_of_actions], name="pVActions")
-                # stores which action was selected at a given time
-                self.selectedAction = tf.placeholder(tf.float32, [None, number_of_actions], name="pSActions")
-                # stores the picked spatial
-                self.selectedSpatialAction = tf.placeholder(tf.float32, [None, self.config.screen_size**2], name="pSPActions")
-                # used for storing whether the current action made use of a spatial action
-                self.validSpatialAction = tf.placeholder(tf.float32, [None], name="pVSActions")
-                # stores the value we are aiming for
-                self.valueTarget = tf.placeholder(tf.float32, [None], name="pVT")
+    def init_worker_calc_variables(self):
+        # stores which actions were valid at a given time
+        self.validActions = tf.placeholder(tf.float32, [None, self.number_of_actions], name="pVActions")
+        # stores which action was selected at a given time
+        self.selectedAction = tf.placeholder(tf.float32, [None, self.number_of_actions], name="pSActions")
+        # stores the picked spatial
+        self.selectedSpatialAction = tf.placeholder(tf.float32, [None, self.config.screen_size**2], name="pSPActions")
+        # used for storing whether the current action made use of a spatial action
+        self.validSpatialAction = tf.placeholder(tf.float32, [None], name="pVSActions")
+        # stores the value we are aiming for
+        self.valueTarget = tf.placeholder(tf.float32, [None], name="pVT")
 
 
-                ##calc
-                # policy(spatial|state)
-                tempSpatialPolicy = tf.reduce_sum(self.spatialPolicy * self.selectedSpatialAction, axis=1)
-                # log(policy(spatial|state))
-                logOfSpatialPolicy = tf.log(tf.clip_by_value(tempSpatialPolicy, 1e-10, 1.))
-                # we use clip by value to ensure no v <= 0 and v > 1 values
-                validSpatialPolicy = logOfSpatialPolicy * self.validSpatialAction
+        ##calc
+        # policy(spatial|state)
+        tempSpatialPolicy = tf.reduce_sum(self.spatialPolicy * self.selectedSpatialAction, axis=1)
+        # log(policy(spatial|state))
+        logOfSpatialPolicy = tf.log(tf.clip_by_value(tempSpatialPolicy, 1e-10, 1.))
+        # we use clip by value to ensure no v <= 0 and v > 1 values
+        validSpatialPolicy = logOfSpatialPolicy * self.validSpatialAction
 
-                # policy(action|state)
-                tempActionPolicy = tf.reduce_sum(self.actionPolicy * self.selectedAction, axis=1)
-                validActionPolicy = tf.clip_by_value(tf.reduce_sum(self.actionPolicy * self.validActions), 1e-10, 1)
-                validActionPolicy = tempActionPolicy / validActionPolicy
-                validActionPolicy = tf.log(tf.clip_by_value(validActionPolicy, 1e-10, 1.))
+        # policy(action|state)
+        tempActionPolicy = tf.reduce_sum(self.actionPolicy * self.selectedAction, axis=1)
+        validActionPolicy = tf.clip_by_value(tf.reduce_sum(self.actionPolicy * self.validActions), 1e-10, 1)
+        validActionPolicy = tempActionPolicy / validActionPolicy
+        validActionPolicy = tf.log(tf.clip_by_value(validActionPolicy, 1e-10, 1.))
 
-                validPolicy = validActionPolicy + validSpatialPolicy
+        validPolicy = validActionPolicy + validSpatialPolicy
 
-                # Gt - v(st) = advantage?
-                advantage = tf.stop_gradient(self.valueTarget - self.value)
-                self.policyLoss = - tf.reduce_mean(validPolicy * advantage)
+        # Gt - v(st) = advantage?
+        advantage = tf.stop_gradient(self.valueTarget - self.value)
+        self.policyLoss = - tf.reduce_mean(validPolicy * advantage)
 
-                self.valueLoss = - tf.reduce_mean(self.value * advantage)
+        self.valueLoss = - tf.reduce_mean(self.value * advantage)
 
-                self.learningRate = tf.placeholder(tf.float32, None, name='learning_rate')
-                # entropy regularization
-                self.entropyLoss = - (tf.reduce_sum(self.actionPolicy * tf.log(self.actionPolicy)) +
-                                      tf.reduce_sum(self.spatialPolicy * tf.log(self.spatialPolicy)))
-                self.loss = self.policyLoss + self.config.value_factor * self.valueLoss + self.config.entropy * self.entropyLoss
+        self.learningRate = tf.placeholder(tf.float32, None, name='learning_rate')
+        # entropy regularization
+        self.entropyLoss = - (tf.reduce_sum(self.actionPolicy * tf.log(self.actionPolicy)) +
+                              tf.reduce_sum(self.spatialPolicy * tf.log(self.spatialPolicy)))
+        self.loss = self.policyLoss + self.config.value_factor * self.valueLoss + self.config.entropy * self.entropyLoss
 
-                optimizer = tf.train.RMSPropOptimizer(self.learningRate, decay=0.99, epsilon=1e-10)
-                # Get gradients from local network using local losses
-                localVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope_id)
-                self.gradients = optimizer.compute_gradients(self.loss, localVars)
-                self.varNorms = tf.global_norm(localVars)
+        optimizer = tf.train.RMSPropOptimizer(self.learningRate, decay=0.99, epsilon=1e-10)
+        # Get gradients from local network using local losses
+        localVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, self.scope_id)
+        self.gradients = optimizer.compute_gradients(self.loss, localVars)
+        self.varNorms = tf.global_norm(localVars)
 
-                self.grads = []
-                for grad, _ in self.gradients:
-                    grad = tf.clip_by_norm(grad, 10.0)
-                    self.grads.append(grad)
-                # Apply local gradients to global network
-                globalVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'global')
-                self.applyGrads = optimizer.apply_gradients(zip(self.grads, globalVars))
+        self.grads = []
+        for grad, _ in self.gradients:
+            grad = tf.clip_by_norm(grad, 10.0)
+            self.grads.append(grad)
+        # Apply local gradients to global network
+        globalVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'global')
+        self.applyGrads = optimizer.apply_gradients(zip(self.grads, globalVars))
