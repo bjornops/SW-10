@@ -131,14 +131,14 @@ class TacticalTrainer(BaseTrain):
                      }
 
         # Generate statistics from our network to periodically save and start the network feed
-        valueLoss, policyLoss, gradientNorms, variableNorms, _ = self.session.run([self.localNetwork.valueLoss,
+        valueLoss, policyLoss, variableNorms, _ = self.session.run([self.localNetwork.valueLoss,
                                                                               self.localNetwork.policyLoss,
-                                                                              self.localNetwork.grads,
+                                                                              # self.localNetwork.grads,
                                                                               self.localNetwork.varNorms,
                                                                               self.localNetwork.applyGrads],
                                                                              feed_dict=feed_dict)
         # Returns statistics for our summary writer
-        return valueLoss / len(experienceBuffer), policyLoss / len(experienceBuffer), gradientNorms, variableNorms
+        return valueLoss / len(experienceBuffer), policyLoss / len(experienceBuffer), variableNorms
 
     def work(self, threadCoordinator):
         self.episodeCount = self.session.run(self.globalEpisodes)  # gets current global episode
@@ -184,7 +184,7 @@ class TacticalTrainer(BaseTrain):
                                                   self.localNetwork.selection: self.experience_buffer[-1][7],
                                                   })[
                     0]
-                valueLoss, policyLoss, gradientNorms, variableNorms = self.train_step()
+                valueLoss, policyLoss, variableNorms = self.train_step()
                 self.experience_buffer = []
                 self.session.run(self.updateVars)
             if done:
@@ -198,12 +198,11 @@ class TacticalTrainer(BaseTrain):
         # Suppress stupid error.
         valueLoss = 0
         policyLoss = 0
-        gradientNorms = 0
         variableNorms = 0
 
         # Update the network using the experience buffer at the end of the episode.
         if len(self.experience_buffer) != 0:
-            valueLoss, policyLoss, gradientNorms, variableNorms = self.train_step()
+            valueLoss, policyLoss, variableNorms = self.train_step()
 
         # save model and statistics.
         if self.episodeCount != 0:
@@ -218,7 +217,6 @@ class TacticalTrainer(BaseTrain):
             summary.value.add(tag='Value', simple_value=float(meanValue))
             summary.value.add(tag='Value Loss', simple_value=float(valueLoss))
             summary.value.add(tag='Policy Loss', simple_value=float(policyLoss))
-            summary.value.add(tag='Grad Norm Loss', simple_value=float(gradientNorms))
             summary.value.add(tag='Var Norm Loss', simple_value=float(variableNorms))
             self.summaryWriter.add_summary(summary, self.episodeCount)
 
