@@ -154,8 +154,6 @@ class TacticalTrainer(BaseTrain):
 
         # reset local network to global network (updateVars = vars of global network)
         self.session.run(self.updateVars)
-        # store experience tuples
-        experienceBuffer = self.experience_buffer
         # Store values
         episodeValues = []
         # Store Rewards
@@ -171,19 +169,19 @@ class TacticalTrainer(BaseTrain):
         while not done:
             # perform step, return exp
             exp, done, screen, actionInfo, obs = self.perform_env_action(obs)
-            experienceBuffer.append(exp)
+            self.experience_buffer.append(exp)
 
             episodeValues.append(exp[3])
             episodeReward += exp[2]
 
-            if len(experienceBuffer) == self.config.buffer_size and not done:
+            if len(self.experience_buffer) == self.config.buffer_size and not done:
                 # we dont know what our final return is, so we bootstrap from our current value estimation.
                 self.val = self.session.run(self.localNetwork.value,
                                        feed_dict={self.localNetwork.screen: screen,
                                                   self.localNetwork.actionInfo: actionInfo,
-                                                  self.localNetwork.generalFeatures: experienceBuffer[-1][5],
-                                                  self.localNetwork.buildQueue: experienceBuffer[-1][6],
-                                                  self.localNetwork.selection: experienceBuffer[-1][7],
+                                                  self.localNetwork.generalFeatures: self.experience_buffer[-1][5],
+                                                  self.localNetwork.buildQueue: self.experience_buffer[-1][6],
+                                                  self.localNetwork.selection: self.experience_buffer[-1][7],
                                                   })[
                     0]
                 valueLoss, policyLoss, gradientNorms, variableNorms = self.train_step()
@@ -204,7 +202,7 @@ class TacticalTrainer(BaseTrain):
         variableNorms = 0
 
         # Update the network using the experience buffer at the end of the episode.
-        if len(experienceBuffer) != 0:
+        if len(self.experience_buffer) != 0:
             valueLoss, policyLoss, gradientNorms, variableNorms = self.train_step()
 
         # save model and statistics.
