@@ -295,7 +295,7 @@ class TacticalTrainer(BaseTrain):
             act_id = vActions[np.argmax(action_policy[vActions])]
 
         spatial_policy = self.session.run([self.localNetwork.spatialPolicy],
-                                         feed_dict={
+                                          feed_dict={
                                              self.localNetwork.screen: screen,
                                              self.localNetwork.generalFeatures: genFeatures,
                                              self.localNetwork.buildQueue: bQueue,
@@ -304,7 +304,7 @@ class TacticalTrainer(BaseTrain):
                                              })
         # Find spatial action
         spatial_action = np.ravel(spatial_policy)  # flatten
-        spaction = np.random.choice((64 * 64), 1, p=spatial_action)
+        spaction = np.random.choice((self.config.screen_size ** 2), 1, p=spatial_action)
         if np.random.rand() < self.exploration:
             spatial_action = [1, spaction]
         else:
