@@ -13,11 +13,11 @@ from utils.sw9_utilities import updateNetwork, addFeatureLayers, getAvailableAct
 
 
 class TacticalTrainer(BaseTrain):
-    def __init__(self, workerID, config, sess, model, data, logger):
+    def __init__(self, worker_id, config, sess, model, data, logger):
         super(TacticalTrainer, self).__init__(sess, model, data, config, logger)
         self.config = config
 
-        self.name = workerID
+        self.name = worker_id
         self.episodeRewards = []
         self.episodeMeans = []
         self.session = sess
@@ -51,101 +51,101 @@ class TacticalTrainer(BaseTrain):
 
     def train_step(self):
 
-        experienceBuffer = np.array(self.experience_buffer)
+        experience_buffer = np.array(self.experience_buffer)
 
         # Splitting of experience
-        observations = experienceBuffer[:, 0]
-        actions = experienceBuffer[:, 1]
-        rewards = experienceBuffer[:, 2]
-        values = experienceBuffer[:, 3]
-        spatialAction = experienceBuffer[:, 4]
-        genFeatures = experienceBuffer[:, 5]
-        obsBuild = experienceBuffer[:, 6]
-        selections = experienceBuffer[:, 7]
-        prevActions = experienceBuffer[:, 8]
+        observations = experience_buffer[:, 0]
+        actions = experience_buffer[:, 1]
+        rewards = experience_buffer[:, 2]
+        values = experience_buffer[:, 3]
+        spatial_action = experience_buffer[:, 4]
+        gen_features = experience_buffer[:, 5]
+        obs_build = experience_buffer[:, 6]
+        selections = experience_buffer[:, 7]
+        prev_actions = experience_buffer[:, 8]
         # stores available actions for each timestep
-        actionInfos = []
+        action_infos = []
 
-        # Spatial and non spatial action preperation
-        bufferSize = len(experienceBuffer)
+        # Spatial and non spatial action preparation
+        buffer_size = len(experience_buffer)
 
         # used for storing whether the current action made use of a spatial action
-        validSpatialAction = np.zeros([bufferSize], dtype=np.float32)
+        valid_spatial_action = np.zeros([buffer_size], dtype=np.float32)
         # stores the picked spatial action(i[1]) for each experience tuple
-        selectedSpatialAction = np.zeros([bufferSize, self.screenSize ** 2], dtype=np.float32)
+        selected_spatial_action = np.zeros([buffer_size, self.screenSize ** 2], dtype=np.float32)
         # stores which actions were valid at a given time
-        validActions = np.zeros([bufferSize, self.number_of_actions], dtype=np.float32)
+        valid_actions = np.zeros([buffer_size, self.number_of_actions], dtype=np.float32)
         # stores which action was selected at a given time
-        selectedAction = np.zeros([bufferSize, self.number_of_actions], dtype=np.float32)
+        selected_action = np.zeros([buffer_size, self.number_of_actions], dtype=np.float32)
         # stores which action was selected at a given time
-        actionMem = np.zeros([bufferSize, 1], dtype=np.float32)
+        action_mem = np.zeros([buffer_size, 1], dtype=np.float32)
 
-        valueTarget = np.zeros([bufferSize], dtype=np.float32)
+        value_target = np.zeros([buffer_size], dtype=np.float32)
 
         lr = self.config.learning_rate * (1 - 0.5 * self.episodeCount / self.config.total_episodes)
 
         if math.isnan(self.val):
-            valueTarget[-1] = 0
+            value_target[-1] = 0
         else:
-            valueTarget[-1] = self.val
+            value_target[-1] = self.val
 
         # goes through each timestep in experience buffer
-        for t in range(0, bufferSize):
+        for t in range(0, buffer_size):
             # was a spatial action used during this timestep
-            if spatialAction[t][0] == 1:
+            if spatial_action[t][0] == 1:
                 # set spatial action chosen during current timestep
-                selectedSpatialAction[t, spatialAction[t][1]] = 1
+                selected_spatial_action[t, spatial_action[t][1]] = 1
                 # a spatial action was used during this timestep
-                validSpatialAction[t] = 1
+                valid_spatial_action[t] = 1
 
             # set which actions were valid during this timestep
-            validActions[t, actions[t][1]] = 1
+            valid_actions[t, actions[t][1]] = 1
             # set action chosen during this timestep
-            selectedAction[t, actions[t][0]] = 1
+            selected_action[t, actions[t][0]] = 1
             # stores valid actions for a specific timestep
-            actionInfo = np.zeros([1, self.number_of_actions], dtype=np.float32)
+            action_info = np.zeros([1, self.number_of_actions], dtype=np.float32)
             # sets valid actions for current timestep
-            actionInfo[0, actions[t][1]] = 1
-            actionInfos.append(actionInfo)
-            actionMem[t] = prevActions[t]
+            action_info[0, actions[t][1]] = 1
+            action_infos.append(action_info)
+            action_mem[t] = prev_actions[t]
 
-        for t in range(bufferSize - 2, -1, -1):
-            valueTarget[t] = rewards[t] + self.config.gamma * valueTarget[t + 1]
+        for t in range(buffer_size - 2, -1, -1):
+            value_target[t] = rewards[t] + self.config.gamma * value_target[t + 1]
 
         # changes dimensions from [buffersize, 1, NB_actions] to [buffersize, NB_actions]
-        actionInfos = np.concatenate(actionInfos, axis=0)
+        action_infos = np.concatenate(action_infos, axis=0)
 
         # Define feed to use for Updating the global network using gradients from loss
-        feed_dict = {self.localNetwork.valueTarget: valueTarget,
+        feed_dict = {self.localNetwork.valueTarget: value_target,
                      self.localNetwork.screen: np.vstack(observations),
-                     self.localNetwork.actionInfo: actionInfos,
-                     self.localNetwork.validActions: validActions,
-                     self.localNetwork.selectedAction: selectedAction,
-                     self.localNetwork.selectedSpatialAction: selectedSpatialAction,
-                     self.localNetwork.validSpatialAction: validSpatialAction,
+                     self.localNetwork.actionInfo: action_infos,
+                     self.localNetwork.validActions: valid_actions,
+                     self.localNetwork.selectedAction: selected_action,
+                     self.localNetwork.selectedSpatialAction: selected_spatial_action,
+                     self.localNetwork.validSpatialAction: valid_spatial_action,
                      self.localNetwork.learningRate: lr,
-                     self.localNetwork.generalFeatures: np.vstack(genFeatures),
-                     self.localNetwork.buildQueue: np.vstack(obsBuild),
+                     self.localNetwork.generalFeatures: np.vstack(gen_features),
+                     self.localNetwork.buildQueue: np.vstack(obs_build),
                      self.localNetwork.selection: np.vstack(selections),
                      # self.localNetwork.previousActions: actionMem
                      }
 
         # Generate statistics from our network to periodically save and start the network feed
-        valueLoss, policyLoss, variableNorms, _ = self.session.run([self.localNetwork.valueLoss,
-                                                                              self.localNetwork.policyLoss,
-                                                                              # self.localNetwork.grads,
-                                                                              self.localNetwork.varNorms,
-                                                                              self.localNetwork.applyGrads],
-                                                                             feed_dict=feed_dict)
+        value_loss, policy_loss, variable_norms, _ = self.session.run([self.localNetwork.valueLoss,
+                                                                       self.localNetwork.policyLoss,
+                                                                       # self.localNetwork.grads,
+                                                                       self.localNetwork.varNorms,
+                                                                       self.localNetwork.applyGrads],
+                                                                      feed_dict=feed_dict)
         # Returns statistics for our summary writer
-        return valueLoss / len(experienceBuffer), policyLoss / len(experienceBuffer), variableNorms
+        return value_loss / len(experience_buffer), policy_loss / len(experience_buffer), variable_norms
 
-    def work(self, threadCoordinator):
+    def work(self, thread_coordinator):
         self.episodeCount = self.session.run(self.globalEpisodes)  # gets current global episode
         print("Starting worker '" + str(self.name) + "'")
 
         with self.session.as_default(), self.session.graph.as_default():
-            while not threadCoordinator.should_stop():
+            while not thread_coordinator.should_stop():
                 self.train_epoch()
 
 
@@ -155,9 +155,9 @@ class TacticalTrainer(BaseTrain):
         # reset local network to global network (updateVars = vars of global network)
         self.session.run(self.updateVars)
         # Store values
-        episodeValues = []
+        episode_values = []
         # Store Rewards
-        episodeReward = 0
+        episode_reward = 0
         # Is the minigame over?
         done = False
 
@@ -168,41 +168,41 @@ class TacticalTrainer(BaseTrain):
         # each step
         while not done:
             # perform step, return exp
-            exp, done, screen, actionInfo, obs = self.perform_env_action(obs)
+            exp, done, screen, action_info, obs = self.perform_env_action(obs)
             self.experience_buffer.append(exp)
 
-            episodeValues.append(exp[3])
-            episodeReward += exp[2]
+            episode_values.append(exp[3])
+            episode_reward += exp[2]
 
             if len(self.experience_buffer) == self.config.buffer_size and not done:
-                # we dont know what our final return is, so we bootstrap from our current value estimation.
+                # we don't know what our final return is, so we bootstrap from our current value estimation.
                 self.val = self.session.run(self.localNetwork.value,
-                                       feed_dict={self.localNetwork.screen: screen,
-                                                  self.localNetwork.actionInfo: actionInfo,
-                                                  self.localNetwork.generalFeatures: self.experience_buffer[-1][5],
-                                                  self.localNetwork.buildQueue: self.experience_buffer[-1][6],
-                                                  self.localNetwork.selection: self.experience_buffer[-1][7],
-                                                  })[
+                                            feed_dict={self.localNetwork.screen: screen,
+                                                       self.localNetwork.actionInfo: action_info,
+                                                       self.localNetwork.generalFeatures: self.experience_buffer[-1][5],
+                                                       self.localNetwork.buildQueue: self.experience_buffer[-1][6],
+                                                       self.localNetwork.selection: self.experience_buffer[-1][7],
+                                                       })[
                     0]
-                valueLoss, policyLoss, variableNorms = self.train_step()
+                value_loss, policy_loss, variable_norms = self.train_step()
                 self.experience_buffer = []
                 self.session.run(self.updateVars)
             if done:
                 break
 
         # When done == true
-        self.episodeRewards.append(episodeReward)
-        self.episodeMeans.append(np.mean(episodeValues))
-        print("Episode: " + str(self.episodeCount) + " Reward: " + str(episodeReward))
+        self.episodeRewards.append(episode_reward)
+        self.episodeMeans.append(np.mean(episode_values))
+        print("Episode: " + str(self.episodeCount) + " Reward: " + str(episode_reward))
 
         # Suppress stupid error.
-        valueLoss = 0
-        policyLoss = 0
-        variableNorms = 0
+        value_loss = 0
+        policy_loss = 0
+        variable_norms = 0
 
         # Update the network using the experience buffer at the end of the episode.
         if len(self.experience_buffer) != 0:
-            valueLoss, policyLoss, variableNorms = self.train_step()
+            value_loss, policy_loss, variable_norms = self.train_step()
 
         # save model and statistics.
         if self.episodeCount != 0:
@@ -210,14 +210,14 @@ class TacticalTrainer(BaseTrain):
             if self.episodeCount % 25 == 0 and self.name == 'worker_0':
                 self.localNetwork.save()
 
-            meanReward = np.mean(self.episodeRewards[-1:])
-            meanValue = np.mean(self.episodeMeans[-1:])
+            mean_reward = np.mean(self.episodeRewards[-1:])
+            mean_value = np.mean(self.episodeMeans[-1:])
             summary = tf.Summary()
-            summary.value.add(tag='Reward', simple_value=float(meanReward))
-            summary.value.add(tag='Value', simple_value=float(meanValue))
-            summary.value.add(tag='Value Loss', simple_value=float(valueLoss))
-            summary.value.add(tag='Policy Loss', simple_value=float(policyLoss))
-            summary.value.add(tag='Var Norm Loss', simple_value=float(variableNorms))
+            summary.value.add(tag='Reward', simple_value=float(mean_reward))
+            summary.value.add(tag='Value', simple_value=float(mean_value))
+            summary.value.add(tag='Value Loss', simple_value=float(value_loss))
+            summary.value.add(tag='Policy Loss', simple_value=float(policy_loss))
+            summary.value.add(tag='Var Norm Loss', simple_value=float(variable_norms))
             self.summaryWriter.add_summary(summary, self.episodeCount)
 
             self.summaryWriter.flush()  # flushes to disk
@@ -232,30 +232,35 @@ class TacticalTrainer(BaseTrain):
         screen = addFeatureLayers(obs[0])
 
         # run session and get policies
-        actionInfo = np.zeros([1, self.number_of_actions], dtype=np.float32)
+        action_info = np.zeros([1, self.number_of_actions], dtype=np.float32)
         # list of available actions
-        actionInfo[0, getAvailableActions(obs[0])] = 1
+        action_info[0, getAvailableActions(obs[0])] = 1
 
-        genFeatures, bQueue, selection = addGeneralFeatures(obs[0])
+        gen_features, b_queue, selection = addGeneralFeatures(obs[0])
 
-        actionPolicy, value = self.session.run([self.localNetwork.actionPolicy, self.localNetwork.value],
-                                          feed_dict={self.localNetwork.screen: screen,
-                                                     self.localNetwork.actionInfo: actionInfo,
-                                                     self.localNetwork.generalFeatures: genFeatures,
-                                                     self.localNetwork.buildQueue: bQueue,
-                                                     self.localNetwork.selection: selection,
-                                                     # self.localNetwork.previousActions: self.previousAction
-                                                     })
+        action_policy, value = self.session.run([self.localNetwork.actionPolicy, self.localNetwork.value],
+                                                feed_dict={
+                                                    self.localNetwork.screen: screen,
+                                                    self.localNetwork.actionInfo: action_info,
+                                                    self.localNetwork.generalFeatures: gen_features,
+                                                    self.localNetwork.buildQueue: b_queue,
+                                                    self.localNetwork.selection: selection,
+                                                    # self.localNetwork.previousActions: self.previousAction
+                                                })
 
         # Select action from policies
-        action, actionExp, spatialAction = self.selectAction(actionPolicy, obs[0], screen, genFeatures,
-                                                                 bQueue, selection)
+        action, action_exp, spatial_action = self.select_action(action_policy,
+                                                                obs[0],
+                                                                screen,
+                                                                gen_features,
+                                                                b_queue,
+                                                                selection)
 
         obs = self.env.step(action)  # Perform action on environment
 
         # self.previousAction = np.insert(self.previousAction, 0, actionExp[0], axis=1)
         # self.previousAction = np.delete(self.previousAction,4, 1)
-        actionMem = self.previousAction[:]
+        action_mem = self.previousAction[:]
 
         self.previousAction[0][0] = 0
 
@@ -265,47 +270,47 @@ class TacticalTrainer(BaseTrain):
         done = obs[0].last()
 
         # return experience
-        return [screen, actionExp, reward, value[0], spatialAction, genFeatures, bQueue, selection, actionMem], done, \
-               screen, actionInfo, obs,
+        return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection, action_mem], done, \
+            screen, action_info, obs,
 
-
-    def selectAction(self, actionPolicy, obs, screen, genFeatures, bQueue, selection):
+    def select_action(self, action_policy, obs, screen, genFeatures, bQueue, selection):
 
         # Find action
 
         # returns list of chosen action intersected with pysc available actions (currently available actions)
         vActions = getAvailableActions(obs)
         # flatten
-        actionPolicy = np.ravel(actionPolicy)
+        action_policy = np.ravel(action_policy)
         # Cuts off any unavailable actions
-        validActions = actionPolicy[vActions]
+        valid_actions = action_policy[vActions]
         # Normalize the valid actions to get a probability distribution (since we cut away some/most probabillities)
-        normActions = [float(i) / sum(validActions) for i in validActions]
+        normalized_actions = [float(i) / sum(valid_actions) for i in valid_actions]
         # Pick an action with probabillity normActions(gets original probability from
-        actionProb = np.random.choice(len(vActions), p=normActions)
+        action_prob = np.random.choice(len(vActions), p=normalized_actions)
         # validActions, not the normalized version) gives us action exploration
         if np.random.rand() < self.exploration:
-            act_id = vActions[actionProb]
+            act_id = vActions[action_prob]
         else:
-            act_id = vActions[np.argmax(actionPolicy[vActions])]
+            act_id = vActions[np.argmax(action_policy[vActions])]
 
-        spatialPolicy = self.session.run([self.localNetwork.spatialPolicy],
-                                    feed_dict={self.localNetwork.screen: screen,
-                                               self.localNetwork.generalFeatures: genFeatures,
-                                               self.localNetwork.buildQueue: bQueue,
-                                               self.localNetwork.selection: selection,
-                                               # self.localNetwork.previousActions: self.previousAction
-                                               })
+        spatial_policy = self.session.run([self.localNetwork.spatialPolicy],
+                                         feed_dict={
+                                             self.localNetwork.screen: screen,
+                                             self.localNetwork.generalFeatures: genFeatures,
+                                             self.localNetwork.buildQueue: bQueue,
+                                             self.localNetwork.selection: selection,
+                                             # self.localNetwork.previousActions: self.previousAction
+                                             })
         # Find spatial action
-        spatialAction = np.ravel(spatialPolicy)  # flatten
-        spaction = np.random.choice((64 * 64), 1, p=spatialAction)
+        spatial_action = np.ravel(spatial_policy)  # flatten
+        spaction = np.random.choice((64 * 64), 1, p=spatial_action)
         if np.random.rand() < self.exploration:
-            spatialAction = [1, spaction]
+            spatial_action = [1, spaction]
         else:
-            spatialAction = [1, np.argmax(spatialAction)]
-        target = [int(spatialAction[1] // self.screenSize), int(spatialAction[1] % self.screenSize)]
+            spatial_action = [1, np.argmax(spatial_action)]
+        target = [int(spatial_action[1] // self.screenSize), int(spatial_action[1] % self.screenSize)]
 
-        spatialAction[1] = target[0] * self.screenSize + target[1]
+        spatial_action[1] = target[0] * self.screenSize + target[1]
 
         # define second spatial action Todo find a suitable solution
         target2 = target[:]
@@ -316,18 +321,18 @@ class TacticalTrainer(BaseTrain):
             target[1] = int(max(0, min(self.screenSize - 1, target[1] - 6)))
 
         # For experience
-        actionExp = [act_id, vActions]
+        action_exp = [act_id, vActions]
 
         act_args = []
         for arg in scActions.FUNCTIONS[act_id].args:
             if arg.name in ('screen', 'minimap'):
                 act_args.append([target[1], target[0]])
-            elif arg.name in ('screen2'):
+            elif arg.name in 'screen2':
                 act_args.append([target2[1], target2[0]])
-            elif arg.name in ('control_group_id'):
+            elif arg.name in 'control_group_id':
                 act_args.append([4])
             else:
                 # No spatial action was used
-                spatialAction[0] = 0
+                spatial_action[0] = 0
                 act_args.append([0])
-        return [scActions.FunctionCall(act_id, act_args)], actionExp, spatialAction
+        return [scActions.FunctionCall(act_id, act_args)], action_exp, spatial_action
