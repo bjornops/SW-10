@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from base.base_train import BaseTrain
 from pysc2.env import sc2_env
-from pysc2.lib import actions as scActions
+from pysc2.lib import actions as sc_actions
 from utils.sw9_utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures
 
 
@@ -21,7 +21,7 @@ class TacticalTrainer(BaseTrain):
         self.episodeRewards = []
         self.episodeMeans = []
         self.session = sess
-        self.number_of_actions = len(scActions.FUNCTIONS)
+        self.number_of_actions = len(sc_actions.FUNCTIONS)
         self.experience_buffer = []
         self.val = 0
 
@@ -37,6 +37,7 @@ class TacticalTrainer(BaseTrain):
 
         self.globalEpisodes = self.model.global_step_tensor
         self.increment = self.globalEpisodes.assign_add(1)
+        self.episode_count = 0
 
         # define that when running a tf session with self.updatevars we want to update the worker to the global network
         self.updateVars = updateNetwork('global', self.name)
@@ -82,7 +83,7 @@ class TacticalTrainer(BaseTrain):
 
         value_target = np.zeros([buffer_size], dtype=np.float32)
 
-        lr = self.config.learning_rate * (1 - 0.5 * self.episodeCount / self.config.total_episodes)
+        lr = self.config.learning_rate * (1 - 0.5 * self.episode_count / self.config.total_episodes)
 
         if math.isnan(self.val):
             value_target[-1] = 0
@@ -141,7 +142,7 @@ class TacticalTrainer(BaseTrain):
         return value_loss / len(experience_buffer), policy_loss / len(experience_buffer), variable_norms
 
     def work(self, thread_coordinator):
-        self.episodeCount = self.session.run(self.globalEpisodes)  # gets current global episode
+        self.episode_count = self.session.run(self.globalEpisodes)  # gets current global episode
         print("Starting worker '" + str(self.name) + "'")
 
         with self.session.as_default(), self.session.graph.as_default():
@@ -193,7 +194,7 @@ class TacticalTrainer(BaseTrain):
         # When done == true
         self.episodeRewards.append(episode_reward)
         self.episodeMeans.append(np.mean(episode_values))
-        print("Episode: " + str(self.episodeCount) + " Reward: " + str(episode_reward))
+        print("Episode: " + str(self.episode_count) + " Reward: " + str(episode_reward))
 
         # Suppress stupid error.
         value_loss = 0
@@ -205,10 +206,10 @@ class TacticalTrainer(BaseTrain):
             value_loss, policy_loss, variable_norms = self.train_step()
 
         # save model and statistics.
-        if self.episodeCount != 0:
+        if self.episode_count != 0:
             # makes sure only one of our workers saves the model
-            if self.episodeCount % 25 == 0 and self.name == 'worker_0':
-                self.localNetwork.save()
+            if self.episode_count % 25 == 0 and self.name == 'worker_0':
+                self.localNetwork.save(self.session)
 
             mean_reward = np.mean(self.episodeRewards[-1:])
             mean_value = np.mean(self.episodeMeans[-1:])
@@ -218,14 +219,14 @@ class TacticalTrainer(BaseTrain):
             summary.value.add(tag='Value Loss', simple_value=float(value_loss))
             summary.value.add(tag='Policy Loss', simple_value=float(policy_loss))
             summary.value.add(tag='Var Norm Loss', simple_value=float(variable_norms))
-            self.summaryWriter.add_summary(summary, self.episodeCount)
+            self.summaryWriter.add_summary(summary, self.episode_count)
 
             self.summaryWriter.flush()  # flushes to disk
 
         if self.name == 'worker_0':  # TODO Maybe fix later.
             self.session.run(self.increment)
 
-        self.episodeCount += 1
+        self.episode_count += 1
 
     def perform_env_action(self, obs):
         # add feature layers
@@ -316,7 +317,7 @@ class TacticalTrainer(BaseTrain):
         target2 = target[:]
         target2[0] = int(max(0, min(self.screenSize - 1, target[0] + 6)))
         target2[1] = int(max(0, min(self.screenSize - 1, target[1] + 6)))
-        if act_id == scActions.FUNCTIONS.select_rect.id:
+        if act_id == sc_actions.FUNCTIONS.select_rect.id:
             target[0] = int(max(0, min(self.screenSize - 1, target[0] - 6)))
             target[1] = int(max(0, min(self.screenSize - 1, target[1] - 6)))
 
@@ -324,7 +325,7 @@ class TacticalTrainer(BaseTrain):
         action_exp = [act_id, vActions]
 
         act_args = []
-        for arg in scActions.FUNCTIONS[act_id].args:
+        for arg in sc_actions.FUNCTIONS[act_id].args:
             if arg.name in ('screen', 'minimap'):
                 act_args.append([target[1], target[0]])
             elif arg.name in 'screen2':
@@ -335,4 +336,4 @@ class TacticalTrainer(BaseTrain):
                 # No spatial action was used
                 spatial_action[0] = 0
                 act_args.append([0])
-        return [scActions.FunctionCall(act_id, act_args)], action_exp, spatial_action
+        return [sc_actions.FunctionCall(act_id, act_args)], action_exp, spatial_action
