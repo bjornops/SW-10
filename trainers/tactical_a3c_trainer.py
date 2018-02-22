@@ -175,7 +175,7 @@ class TacticalTrainer(BaseTrain):
             episode_values.append(exp[3])
             episode_reward += exp[2]
 
-            if len(self.experience_buffer) == self.config.buffer_size and not done:
+            if len(self.experience_buffer) >= self.config.buffer_size and not done:
                 # we don't know what our final return is, so we bootstrap from our current value estimation.
                 self.val = self.session.run(self.localNetwork.value,
                                             feed_dict={self.localNetwork.screen: screen,
