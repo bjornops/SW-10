@@ -48,7 +48,6 @@ class TacticalNetwork(BaseModel):
             self.generalFeatures = tf.placeholder(tf.float32, [None, 11], name='generalFeatures')
             self.buildQueue = tf.placeholder(tf.float32, [None, 5, 7], name='bQueue')
             self.selection = tf.placeholder(tf.float32, [None, 20, 7], name='selection')
-            # self.previousActions = tf.placeholder(tf.float32, [None, 1], name='previousActions')
 
             sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]),
                                    num_outputs=16,
@@ -62,7 +61,6 @@ class TacticalNetwork(BaseModel):
                                    scope='sconv2')
 
             infoFc = layers.fully_connected(tf.concat([layers.flatten(self.actionInfo)],
-                                                      # layers.flatten(self.previousActions)],
                                                       axis=1),
                                             num_outputs=128,
                                             activation_fn=tf.tanh,

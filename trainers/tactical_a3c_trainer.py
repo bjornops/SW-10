@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
 import math
 import numpy as np
 import tensorflow as tf
@@ -30,7 +29,6 @@ class TacticalTrainer(BaseTrain):
         self.screenSize = self.config.screen_size
         self.exploration = self.config.exploration
         self.mapName = self.config.map_name
-        self.previousAction = np.zeros([1, 1], dtype=np.float32)
 
         # Create local network
         self.localNetwork = model
@@ -63,7 +61,6 @@ class TacticalTrainer(BaseTrain):
         gen_features = experience_buffer[:, 5]
         obs_build = experience_buffer[:, 6]
         selections = experience_buffer[:, 7]
-        prev_actions = experience_buffer[:, 8]
         # stores available actions for each timestep
         action_infos = []
 
@@ -78,8 +75,6 @@ class TacticalTrainer(BaseTrain):
         valid_actions = np.zeros([buffer_size, self.number_of_actions], dtype=np.float32)
         # stores which action was selected at a given time
         selected_action = np.zeros([buffer_size, self.number_of_actions], dtype=np.float32)
-        # stores which action was selected at a given time
-        action_mem = np.zeros([buffer_size, 1], dtype=np.float32)
 
         value_target = np.zeros([buffer_size], dtype=np.float32)
 
@@ -108,7 +103,6 @@ class TacticalTrainer(BaseTrain):
             # sets valid actions for current timestep
             action_info[0, actions[t][1]] = 1
             action_infos.append(action_info)
-            action_mem[t] = prev_actions[t]
 
         for t in range(buffer_size - 2, -1, -1):
             value_target[t] = rewards[t] + self.config.gamma * value_target[t + 1]
@@ -128,7 +122,6 @@ class TacticalTrainer(BaseTrain):
                      self.localNetwork.generalFeatures: np.vstack(gen_features),
                      self.localNetwork.buildQueue: np.vstack(obs_build),
                      self.localNetwork.selection: np.vstack(selections),
-                     # self.localNetwork.previousActions: actionMem
                      }
 
         # Generate statistics from our network to periodically save and start the network feed
@@ -164,7 +157,6 @@ class TacticalTrainer(BaseTrain):
 
         # Reset minigame
         obs = self.env.reset()
-        self.previousAction = np.zeros([1, 1], dtype=np.float32)
 
         # each step
         while not done:
@@ -246,7 +238,6 @@ class TacticalTrainer(BaseTrain):
                                                     self.localNetwork.generalFeatures: gen_features,
                                                     self.localNetwork.buildQueue: b_queue,
                                                     self.localNetwork.selection: selection,
-                                                    # self.localNetwork.previousActions: self.previousAction
                                                 })
 
         # Select action from policies
@@ -259,19 +250,13 @@ class TacticalTrainer(BaseTrain):
 
         obs = self.env.step(action)  # Perform action on environment
 
-        # self.previousAction = np.insert(self.previousAction, 0, actionExp[0], axis=1)
-        # self.previousAction = np.delete(self.previousAction,4, 1)
-        action_mem = self.previousAction[:]
-
-        self.previousAction[0][0] = 0
-
         # Gets reward from current step
         reward = obs[0].reward
         # Check if the minigame has finished
         done = obs[0].last()
 
         # return experience
-        return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection, action_mem], done, \
+        return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection], done, \
             screen, action_info, obs,
 
     def select_action(self, action_policy, obs, screen, genFeatures, bQueue, selection):
@@ -299,8 +284,7 @@ class TacticalTrainer(BaseTrain):
                                              self.localNetwork.screen: screen,
                                              self.localNetwork.generalFeatures: genFeatures,
                                              self.localNetwork.buildQueue: bQueue,
-                                             self.localNetwork.selection: selection,
-                                             # self.localNetwork.previousActions: self.previousAction
+                                             self.localNetwork.selection: selection
                                              })
         # Find spatial action
         spatial_action = np.ravel(spatial_policy)  # flatten
