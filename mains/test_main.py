@@ -41,7 +41,6 @@ def main(argv):
         model.init_worker_calc_variables()
         models.append(model)
 
-
     # create your data generator
     data = DataGenerator(config)  # TODO Remove?
 
@@ -54,13 +53,11 @@ def main(argv):
         trainers.append(trainer)
 
     # here you train your model
-    #trainer.train()
+    # trainer.train()
     worker_handler(sess, trainers, config)
 
 
 def worker_handler(sess, trainers, config):
-    data = 0
-    logger = 0
     workers = []
 
     # Create workers
