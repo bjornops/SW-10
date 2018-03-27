@@ -1,10 +1,12 @@
-from base.base_train import BaseTrain
-from tqdm import tqdm
 import numpy as np
+from tqdm import tqdm
+
+from base.template.base_train import BaseTrain
+
 
 class ExampleTrainer(BaseTrain):
     def __init__(self, sess, model, data, config,logger):
-        super(ExampleTrainer, self).__init__(sess, model, data, config,logger)
+        super(ExampleTrainer, self).__init__(sess, model, data, config, logger)
 
     def train_epoch(self):
         loop = tqdm(range(self.config.num_iter_per_epoch))
