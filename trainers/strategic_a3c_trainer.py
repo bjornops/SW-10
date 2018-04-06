@@ -261,8 +261,8 @@ class StrategicTrainer(BaseTrain):
         return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection], done, \
                screen, action_info, obs,
 
-    def select_action(self, action_policy, obs, screen, session, genFeatures, bQueue, tactNet, tactNet1, tactNet2,
-                      selection, tactNet3, tactNet4):
+    def select_action(self, action_policy, obs, screen, session, gen_features, b_queue, selection, tact_net,
+                      tact_net1, tact_net2, tact_net3, tact_net4):
 
         # Find action
         # returns list of chosen action intersected with pysc available actions (currently available actions)
@@ -291,50 +291,50 @@ class StrategicTrainer(BaseTrain):
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsEA(obs)
 
-            tact_action_policy = session.run([tactNet.actionPolicy],
-                                             feed_dict={tactNet.screen: screen,
-                                                        tactNet.actionInfo: action_info,
-                                                        tactNet.generalFeatures: genFeatures,
-                                                        tactNet.buildQueue: bQueue,
-                                                        tactNet.selection: selection})
+            tact_action_policy = session.run([tact_net.actionPolicy],
+                                             feed_dict={tact_net.screen: screen,
+                                                        tact_net.actionInfo: action_info,
+                                                        tact_net.generalFeatures: gen_features,
+                                                        tact_net.buildQueue: b_queue,
+                                                        tact_net.selection: selection})
         elif strat_act_id == 1:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsEP(obs)
-            tact_action_policy = session.run([tactNet1.actionPolicy],
-                                             feed_dict={tactNet1.screen: screen,
-                                                        tactNet1.actionInfo: action_info,
-                                                        tactNet1.generalFeatures: genFeatures,
-                                                        tactNet1.buildQueue: bQueue,
-                                                        tactNet1.selection: selection})
+            tact_action_policy = session.run([tact_net1.actionPolicy],
+                                             feed_dict={tact_net1.screen: screen,
+                                                        tact_net1.actionInfo: action_info,
+                                                        tact_net1.generalFeatures: gen_features,
+                                                        tact_net1.buildQueue: b_queue,
+                                                        tact_net1.selection: selection})
 
         elif strat_act_id == 2:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsCM(obs)
-            tact_action_policy = session.run([tactNet2.actionPolicy],
-                                             feed_dict={tactNet2.screen: screen,
-                                                        tactNet2.actionInfo: action_info,
-                                                        tactNet2.generalFeatures: genFeatures,
-                                                        tactNet2.buildQueue: bQueue,
-                                                        tactNet2.selection: selection})
+            tact_action_policy = session.run([tact_net2.actionPolicy],
+                                             feed_dict={tact_net2.screen: screen,
+                                                        tact_net2.actionInfo: action_info,
+                                                        tact_net2.generalFeatures: gen_features,
+                                                        tact_net2.buildQueue: b_queue,
+                                                        tact_net2.selection: selection})
 
         elif strat_act_id == 3:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsBS(obs)
-            tact_action_policy = session.run([tactNet3.actionPolicy],
-                                             feed_dict={tactNet3.screen: screen,
-                                                        tactNet3.actionInfo: action_info,
-                                                        tactNet3.generalFeatures: genFeatures,
-                                                        tactNet3.buildQueue: bQueue,
-                                                        tactNet3.selection: selection})
+            tact_action_policy = session.run([tact_net3.actionPolicy],
+                                             feed_dict={tact_net3.screen: screen,
+                                                        tact_net3.actionInfo: action_info,
+                                                        tact_net3.generalFeatures: gen_features,
+                                                        tact_net3.buildQueue: b_queue,
+                                                        tact_net3.selection: selection})
         elif strat_act_id == 4:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsBSCV(obs)
-            tact_action_policy = session.run([tactNet4.actionPolicy],
-                                             feed_dict={tactNet4.screen: screen,
-                                                        tactNet4.actionInfo: action_info,
-                                                        tactNet4.generalFeatures: genFeatures,
-                                                        tactNet4.buildQueue: bQueue,
-                                                        tactNet4.selection: selection})
+            tact_action_policy = session.run([tact_net4.actionPolicy],
+                                             feed_dict={tact_net4.screen: screen,
+                                                        tact_net4.actionInfo: action_info,
+                                                        tact_net4.generalFeatures: gen_features,
+                                                        tact_net4.buildQueue: b_queue,
+                                                        tact_net4.selection: selection})
 
         # Find action
 
@@ -356,35 +356,35 @@ class StrategicTrainer(BaseTrain):
             act_id = v_actions_tact[np.argmax(action_policy_tact[v_actions_tact])]
 
         if strat_act_id == 0:
-            spatial_policy = session.run([tactNet.spatialPolicy],
-                                         feed_dict={tactNet.screen: screen,
-                                                    tactNet.generalFeatures: genFeatures,
-                                                    tactNet.buildQueue: bQueue,
-                                                    tactNet.selection: selection})
+            spatial_policy = session.run([tact_net.spatialPolicy],
+                                         feed_dict={tact_net.screen: screen,
+                                                    tact_net.generalFeatures: gen_features,
+                                                    tact_net.buildQueue: b_queue,
+                                                    tact_net.selection: selection})
         elif strat_act_id == 1:
-            spatial_policy = session.run([tactNet1.spatialPolicy],
-                                         feed_dict={tactNet1.screen: screen,
-                                                    tactNet1.generalFeatures: genFeatures,
-                                                    tactNet1.buildQueue: bQueue,
-                                                    tactNet1.selection: selection})
+            spatial_policy = session.run([tact_net1.spatialPolicy],
+                                         feed_dict={tact_net1.screen: screen,
+                                                    tact_net1.generalFeatures: gen_features,
+                                                    tact_net1.buildQueue: b_queue,
+                                                    tact_net1.selection: selection})
         elif strat_act_id == 2:
-            spatial_policy = session.run([tactNet2.spatialPolicy],
-                                         feed_dict={tactNet2.screen: screen,
-                                                    tactNet2.generalFeatures: genFeatures,
-                                                    tactNet2.buildQueue: bQueue,
-                                                    tactNet2.selection: selection})
+            spatial_policy = session.run([tact_net2.spatialPolicy],
+                                         feed_dict={tact_net2.screen: screen,
+                                                    tact_net2.generalFeatures: gen_features,
+                                                    tact_net2.buildQueue: b_queue,
+                                                    tact_net2.selection: selection})
         elif strat_act_id == 3:
-            spatial_policy = session.run([tactNet3.spatialPolicy],
-                                         feed_dict={tactNet3.screen: screen,
-                                                    tactNet3.generalFeatures: genFeatures,
-                                                    tactNet3.buildQueue: bQueue,
-                                                    tactNet3.selection: selection})
+            spatial_policy = session.run([tact_net3.spatialPolicy],
+                                         feed_dict={tact_net3.screen: screen,
+                                                    tact_net3.generalFeatures: gen_features,
+                                                    tact_net3.buildQueue: b_queue,
+                                                    tact_net3.selection: selection})
         elif strat_act_id == 4:
-            spatial_policy = session.run([tactNet4.spatialPolicy],
-                                         feed_dict={tactNet4.screen: screen,
-                                                    tactNet4.generalFeatures: genFeatures,
-                                                    tactNet4.buildQueue: bQueue,
-                                                    tactNet4.selection: selection})
+            spatial_policy = session.run([tact_net4.spatialPolicy],
+                                         feed_dict={tact_net4.screen: screen,
+                                                    tact_net4.generalFeatures: gen_features,
+                                                    tact_net4.buildQueue: b_queue,
+                                                    tact_net4.selection: selection})
 
         # Find spatial action
 
@@ -420,4 +420,4 @@ class StrategicTrainer(BaseTrain):
                 # No spatial action was used
                 spatial_action[0] = 0
                 act_args.append([0])
-        return [sc_actions.FunctionCall(act_id, act_args)], action_exp, spatial_action, act_id
+        return [sc_actions.FunctionCall(act_id, act_args)], action_exp, spatial_action
