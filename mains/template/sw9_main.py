@@ -125,7 +125,7 @@ def startWorkers(totalEpisodes, gamma, screenSize, numberOfActions, loadModel, m
 
         if hier:
             tactNetwork = TacticalNetwork(screenSize, len(scActions.FUNCTIONS),"HHExpandArmy2", numberOfFeatures,
-                                          valueFactor, entropyFactor) # Create local network
+                                           valueFactor, entropyFactor) # Create local network
             tactNetwork1 = TacticalNetwork(screenSize, len(scActions.FUNCTIONS),"HHBuildBarracks", numberOfFeatures,
                                            valueFactor, entropyFactor) # Create local network
             tactNetwork2 = TacticalNetwork(screenSize, len(scActions.FUNCTIONS),"HHAssignSCV", numberOfFeatures,
