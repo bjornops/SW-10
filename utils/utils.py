@@ -119,3 +119,25 @@ def tactical_network_setup(config):
     dict = [dict1, dict2, dict3, dict4, dict5]
 
     return tactical_networks, dict
+
+
+def load_strategic(config):
+
+    vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'global')
+
+    dict = {config.map_name + '/sconv1/weights:0': vars[0],
+            config.map_name + '/sconv1/biases:0': vars[1],
+            config.map_name + '/sconv2/weights:0': vars[2],
+            config.map_name + '/sconv2/biases:0': vars[3],
+            config.map_name + '/info_fc/weights:0': vars[4],
+            config.map_name + '/info_fc/biases:0': vars[5],
+            config.map_name + '/genFc/weights:0': vars[6],
+            config.map_name + '/genFc/biases:0': vars[7],
+            config.map_name + '/feat_fc/weights:0': vars[8],
+            config.map_name + '/feat_fc/biases:0': vars[9],
+            config.map_name + '/non_spatial_action/weights:0': vars[10],
+            config.map_name + '/non_spatial_action/biases:0': vars[11],
+            config.map_name + '/value/weights:0': vars[12],
+            config.map_name + '/value/biases:0': vars[13]}
+
+    return dict

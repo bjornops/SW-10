@@ -9,6 +9,7 @@ from models.strategic_network import StrategicNetwork
 from trainers.strategic_a3c_trainer import StrategicTrainer
 from utils.logger import Logger
 from absl import app
+from utils.utils import load_strategic, tactical_network_setup
 
 
 def main(argv):
@@ -48,6 +49,22 @@ def main(argv):
     for i in range(config.worker_count):
         trainer = StrategicTrainer("worker_" + str(i), config, sess, models[i], data, logger)
         trainers.append(trainer)
+
+    # Loading
+    if config.load_model:
+        dict_strategic = load_strategic(config)
+        saver_strategic = tf.train.Saver(var_list=dict_strategic, max_to_keep=5)
+        saver_strategic.res
+
+
+    tactical_networks, dict_tacticals = tactical_network_setup(config)
+
+    saver = []
+    for i in range(5):
+        saver[i] = tf.train.Saver(var_list=dict_tacticals[i], max_to_keep=5)
+
+
+
 
     # here you train your model
     worker_handler(sess, trainers, config)

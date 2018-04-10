@@ -241,6 +241,7 @@ def startWorkers(totalEpisodes, gamma, screenSize, numberOfActions, loadModel, m
             saver3 = tf.train.Saver(var_list=dict3, max_to_keep=10)
             saver4 = tf.train.Saver(var_list=dict4, max_to_keep=10)
             saver5 = tf.train.Saver(var_list=dict5, max_to_keep=10)
+
         if loadModel:
             saverMain = tf.train.Saver(var_list=dictMain,max_to_keep=10)
 
@@ -261,7 +262,7 @@ def startWorkers(totalEpisodes, gamma, screenSize, numberOfActions, loadModel, m
             # Gets last model checkpoint
             checkpoint = tf.train.get_checkpoint_state(modPath)
             # sets current network to that of checkpoint
-            saverMain.restore(session,checkpoint.model_checkpoint_path)
+            saverMain.restore(session, checkpoint.model_checkpoint_path)
         else:
             # Initialize global variables
             session.run(tf.global_variables_initializer())
