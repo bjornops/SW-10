@@ -13,5 +13,6 @@
   "buffer_size": 80,
   "screen_size": 64,
   "step_mul": 8,
-  "max_to_keep": 12
+  "max_to_keep": 12,
+  "load_model": true
 }
