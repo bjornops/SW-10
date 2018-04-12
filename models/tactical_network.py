@@ -36,7 +36,7 @@ class TacticalNetwork(BaseModel):
                 self.config.map_name + '/value/weights:0': globalVars[14],
                 self.config.map_name + '/value/biases:0': globalVars[15]}
         saver = tf.train.Saver(dict)
-        saver.save(sess, self.config.checkpoint_dir + '/model-' + str(self.global_step_tensor) + '.cptk')
+        saver.save(sess, self.config.checkpoint_dir + "/" + self.config.map_name + self.config.test_id + '.cptk', self.global_step_tensor.eval())
         print("Model Saved")
 
     def build_model(self):
