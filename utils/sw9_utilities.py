@@ -79,33 +79,32 @@ def addGeneralFeatures(obs):
     return featureLayers, bqueue, selection
 
 # Used to add any wanted actions
-def getAvailableActions(obs):
+def getAvailableActions(obs, map_name):
+    availActions = obs.observation['available_actions']
+    chosenActions = []
+
+    if map_name == "CollectMinerals":
+        chosenActions = getAvailableActionsCM(obs)
+    elif map_name == "CollectMineralShards":
+        chosenActions = getAvailableActionsCMS(obs)
+    elif map_name == "ExpandArmy":
+        chosenActions = getAvailableActionsEA(obs)
+    elif map_name == "ExpandProduction":
+        chosenActions = getAvailableActionsEP(obs)
+    else:
+        raise Exception("Action set not defined for the map '" + map_name + "'. Also check spelling.")
+
+    return list(set(availActions) & set(chosenActions))
+
+def getAvailableActionsCMS(obs):
     availActions = obs.observation['available_actions']
     chosenActions = []
 
     chosenActions.append(scActions.FUNCTIONS.Move_screen.id)
-    #chosenActions.append(scActions.FUNCTIONS.no_op.id)
+    chosenActions.append(scActions.FUNCTIONS.no_op.id)
     chosenActions.append(scActions.FUNCTIONS.select_point.id)
-    #chosenActions.append(scActions.FUNCTIONS.select_rect.id)
-    chosenActions.append(scActions.FUNCTIONS.select_army.id)
-    #chosenActions.append(scActions.FUNCTIONS.select_idle_worker.id)
-    #chosenActions.append(scActions.FUNCTIONS.build_queue.id)
-    #chosenActions.append(scActions.FUNCTIONS.Build_Refinery_screen.id)
-    chosenActions.append(scActions.FUNCTIONS.Build_Barracks_screen.id)
-    #chosenActions.append(scActions.FUNCTIONS.Build_CommandCenter_screen.id)
-    #chosenActions.append(scActions.FUNCTIONS.Harvest_Gather_screen.id)
-    #chosenActions.append(scActions.FUNCTIONS.Harvest_Gather_SCV_screen.id)
-    chosenActions.append(scActions.FUNCTIONS.Build_SupplyDepot_screen.id)
-    #chosenActions.append(scActions.FUNCTIONS.Rally_Workers_screen.id)
-    #chosenActions.append(scActions.FUNCTIONS.Rally_CommandCenter_screen.id)
-    chosenActions.append(scActions.FUNCTIONS.Train_Marine_quick.id)
-    #chosenActions.append(scActions.FUNCTIONS.Train_SCV_quick.id)
-    #chosenActions.append(scActions.FUNCTIONS.Attack_screen.id)
-    #chosenActions.append(scActions.FUNCTIONS.Attack_Attack_screen.id)
-    #chosenActions.append(scActions.FUNCTIONS.select_control_group.id)
 
     return list(set(availActions) & set(chosenActions))
-    #return availActions
 
 def getAvailableActionsCM(obs):
     availActions = obs.observation['available_actions']
