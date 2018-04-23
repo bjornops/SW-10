@@ -23,4 +23,5 @@ def process_config(jsonfile):
     config, _ = get_config_from_json(jsonfile)
     config.summary_dir = os.path.join("../experiments", "summary")
     config.checkpoint_dir = os.path.join("../experiments", "checkpoint")
+    config.pretrained_dir = os.path.join("../models", "pretrained")
     return config

@@ -54,23 +54,42 @@ def main(argv):
     if config.load_model:
         dict_strategic = load_strategic(config)
         saver_strategic = tf.train.Saver(var_list=dict_strategic, max_to_keep=5)
-        saver_strategic.restore()
+        pretrained_path = config.pretrained_dir + "/strategic"  # "G:/pysc/models/BuildMarinesTBlue2"
+        checkpoint = tf.train.get_checkpoint_state(pretrained_path)
+        saver_strategic.restore(sess, checkpoint.model_checkpoint_path)
 
-
+    # Tactical networks
     tactical_networks, dict_tacticals = tactical_network_setup(config)
 
     saver = []
     for i in range(5):
         saver[i] = tf.train.Saver(var_list=dict_tacticals[i], max_to_keep=5)
 
+    expArmyPath = config.pretrained_dir + "/expandarmy"
+    checkpoint = tf.train.get_checkpoint_state(expArmyPath) #Gets last model checkpoint
+    saver[0].restore(sess, checkpoint.model_checkpoint_path) #sets current network to that of checkpoint
 
+    expProdPath = config.pretrained_dir + "/buildbarracks" # Expand Production
+    checkpoint = tf.train.get_checkpoint_state(expProdPath) #Gets last model checkpoint
+    saver[1].restore(sess, checkpoint.model_checkpoint_path) #sets current network to that of checkpoint
 
+    assignSCVPath = config.pretrained_dir + "/assignscv"
+    checkpoint = tf.train.get_checkpoint_state(assignSCVPath) #Gets last model checkpoint
+    saver[2].restore(sess, checkpoint.model_checkpoint_path) #sets current network to that of checkpoint
+
+    supplyPath = config.pretrained_dir + "/buildsupply"
+    checkpoint = tf.train.get_checkpoint_state(supplyPath) #Gets last model checkpoint
+    saver[3].restore(sess, checkpoint.model_checkpoint_path) #sets current network to that of checkpoint
+
+    buildSCVPath = config.pretrained_dir + "/buildscv"
+    checkpoint = tf.train.get_checkpoint_state(buildSCVPath) #Gets last model checkpoint
+    saver[4].restore(sess, checkpoint.model_checkpoint_path) #sets current network to that of checkpoint
 
     # here you train your model
-    worker_handler(sess, trainers, config)
+    worker_handler(sess, trainers, config, tactical_networks)
 
 
-def worker_handler(sess, trainers, config):
+def worker_handler(sess, trainers, config, tactical_networks):
     workers = []
 
     # Create workers
@@ -88,7 +107,7 @@ def worker_handler(sess, trainers, config):
     worker_threads = []
     for worker in workers:
         # sets up thread with args for function
-        worker_thread = threading.Thread(target=worker.work, args=(thread_coordinator,))
+        worker_thread = threading.Thread(target=worker.work, args=(thread_coordinator, tactical_networks))
         worker_thread.start()
         sleep(0.5)
         worker_threads.append(worker_thread)

@@ -136,7 +136,8 @@ class StrategicTrainer(BaseTrain):
         # Returns statistics for our summary writer
         return value_loss / len(experience_buffer), policy_loss / len(experience_buffer), variable_norms
 
-    def work(self, thread_coordinator):
+    def work(self, thread_coordinator, tactical_networks):
+        self.tactical_networks = tactical_networks
         self.episode_count = self.session.run(self.globalEpisodes)  # gets current global episode
         print("Starting worker '" + str(self.name) + "'")
 
@@ -260,8 +261,7 @@ class StrategicTrainer(BaseTrain):
         return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection], done, \
                screen, action_info, obs,
 
-    def select_action(self, action_policy, obs, screen, session, gen_features, b_queue, selection, tact_net,
-                      tact_net1, tact_net2, tact_net3, tact_net4):
+    def select_action(self, action_policy, obs, screen, session, gen_features, b_queue, selection):
 
         # Find action
         # returns list of chosen action intersected with pysc available actions (currently available actions)
@@ -286,10 +286,18 @@ class StrategicTrainer(BaseTrain):
         # list of available actions
         action_info[0, getAvailableActions(obs)] = 1
         # print(str(strat_act_id))
+
+        # Set local tactical networks
+        tact_net = self.tactical_networks[0]
+        tact_net1 = self.tactical_networks[1]
+        tact_net2 = self.tactical_networks[2]
+        tact_net3 = self.tactical_networks[3]
+        tact_net4 = self.tactical_networks[4]
+
+        # Select primitive action
         if strat_act_id == 0:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsEA(obs)
-
             tact_action_policy = session.run([tact_net.actionPolicy],
                                              feed_dict={tact_net.screen: screen,
                                                         tact_net.actionInfo: action_info,
@@ -348,11 +356,7 @@ class StrategicTrainer(BaseTrain):
         norm_actions_tact = [float(i) / sum(valid_actions_tact) for i in valid_actions_tact]
         # Pick an action with probabillity norm_actions(gets original probability from
         action_prob_tact = np.random.choice(len(v_actions_tact), p=norm_actions_tact)
-        # valid_actions, not the normalized version) gives us action exploration
-        if np.random.rand() < self.exploration:
-            act_id = v_actions_tact[action_prob_tact]
-        else:
-            act_id = v_actions_tact[np.argmax(action_policy_tact[v_actions_tact])]
+        act_id = v_actions_tact[action_prob_tact]
 
         if strat_act_id == 0:
             spatial_policy = session.run([tact_net.spatialPolicy],
