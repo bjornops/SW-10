@@ -63,7 +63,7 @@ def main(argv):
 
     saver = []
     for i in range(5):
-        saver[i] = tf.train.Saver(var_list=dict_tacticals[i], max_to_keep=5)
+        saver.append(tf.train.Saver(var_list=dict_tacticals[i], max_to_keep=5))
 
     expArmyPath = config.pretrained_dir + "/expandarmy"
     checkpoint = tf.train.get_checkpoint_state(expArmyPath) #Gets last model checkpoint

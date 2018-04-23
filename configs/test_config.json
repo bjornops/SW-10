@@ -1,5 +1,5 @@
 {
-  "map_name": "DefeatRoaches",
+  "map_name": "HHExpandArmy2",
   "test_id": "Black",
   "exp_name": "test",
   "total_episodes": 2000,
@@ -14,5 +14,5 @@
   "screen_size": 64,
   "step_mul": 8,
   "max_to_keep": 4,
-  "load_model": true
+  "load_model": false
 }
