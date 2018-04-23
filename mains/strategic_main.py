@@ -54,7 +54,7 @@ def main(argv):
     if config.load_model:
         dict_strategic = load_strategic(config)
         saver_strategic = tf.train.Saver(var_list=dict_strategic, max_to_keep=5)
-        saver_strategic.res
+        saver_strategic.restore()
 
 
     tactical_networks, dict_tacticals = tactical_network_setup(config)
