@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 from base.base_model import BaseModel
+import os
 
 
 class StrategicNetwork(BaseModel):
@@ -34,9 +35,8 @@ class StrategicNetwork(BaseModel):
                 self.config.map_name + '/value/weights:0': global_vars[12],
                 self.config.map_name + '/value/biases:0': global_vars[13]}
         saver = tf.train.Saver(dict)
-        saver.save(sess,
-                   self.config.checkpoint_dir + "/" + self.config.map_name + "/" + self.config.map_name +
-                   self.config.test_id + '.cptk', self.global_step_tensor.eval())
+        saver.save(sess, os.path.join(self.config.checkpoint_dir, self.config.map_name, self.config.map_name +
+                                      self.config.test_id + '.cptk'), self.global_step_tensor.eval())
         print("Model Saved")
 
     def build_model(self):

@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 import math
 import numpy as np
 import tensorflow as tf
@@ -27,7 +28,7 @@ class StrategicTrainer(BaseTrain):
         self.val = 0
 
         # Tensorflow summary writer (for tensorboard)
-        self.summaryWriter = tf.summary.FileWriter(self.config.summary_dir + "/" + self.config.map_name + "_" + self.config.test_id + "-" + self.name)
+        self.summaryWriter = tf.summary.FileWriter(os.path.join(self.config.summary_dir, self.config.map_name + "_" + self.config.test_id + "-" + self.name))
         self.screenSize = self.config.screen_size
         self.exploration = self.config.exploration
         self.mapName = self.config.map_name
