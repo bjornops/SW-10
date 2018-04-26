@@ -1,5 +1,6 @@
 import tensorflow as tf
 import threading
+import os
 from time import sleep
 from utils.config import process_config
 from utils.dirs import create_dirs
@@ -54,7 +55,7 @@ def main(argv):
     if config.load_model:
         dict_strategic = load_strategic(config)
         saver_strategic = tf.train.Saver(var_list=dict_strategic, max_to_keep=5)
-        pretrained_path = config.pretrained_dir + "/strategic"  # "G:/pysc/models/BuildMarinesTBlue2"
+        pretrained_path = os.path.join(config.pretrained_dir, "strategic")  # "G:/pysc/models/BuildMarinesTBlue2"
         checkpoint = tf.train.get_checkpoint_state(pretrained_path)
         saver_strategic.restore(sess, checkpoint.model_checkpoint_path)
 
@@ -65,23 +66,23 @@ def main(argv):
     for i in range(5):
         saver.append(tf.train.Saver(var_list=dict_tacticals[i], max_to_keep=5))
 
-    expArmyPath = config.pretrained_dir + "/expandarmy"
+    expArmyPath = os.path.join(config.pretrained_dir, "HHExpandArmy2")
     checkpoint = tf.train.get_checkpoint_state(expArmyPath) #Gets last model checkpoint
     saver[0].restore(sess, checkpoint.model_checkpoint_path) #sets current network to that of checkpoint
 
-    expProdPath = config.pretrained_dir + "/buildbarracks" # Expand Production
+    expProdPath = os.path.join(config.pretrained_dir, "HHBuildBarracks") # Expand Production
     checkpoint = tf.train.get_checkpoint_state(expProdPath) #Gets last model checkpoint
     saver[1].restore(sess, checkpoint.model_checkpoint_path) #sets current network to that of checkpoint
 
-    assignSCVPath = config.pretrained_dir + "/assignscv"
+    assignSCVPath = os.path.join(config.pretrained_dir, "HHAssignSCV")
     checkpoint = tf.train.get_checkpoint_state(assignSCVPath) #Gets last model checkpoint
     saver[2].restore(sess, checkpoint.model_checkpoint_path) #sets current network to that of checkpoint
 
-    supplyPath = config.pretrained_dir + "/buildsupply"
+    supplyPath = os.path.join(config.pretrained_dir, "HHBuildSupply")
     checkpoint = tf.train.get_checkpoint_state(supplyPath) #Gets last model checkpoint
     saver[3].restore(sess, checkpoint.model_checkpoint_path) #sets current network to that of checkpoint
 
-    buildSCVPath = config.pretrained_dir + "/buildscv"
+    buildSCVPath = os.path.join(config.pretrained_dir, "HHBuildSCV")
     checkpoint = tf.train.get_checkpoint_state(buildSCVPath) #Gets last model checkpoint
     saver[4].restore(sess, checkpoint.model_checkpoint_path) #sets current network to that of checkpoint
 
