@@ -23,7 +23,7 @@ class StrategicTrainer(BaseTrain):
         self.episodeRewards = []
         self.episodeMeans = []
         self.session = sess
-        self.number_of_actions = len(sc_actions.FUNCTIONS)
+        self.number_of_actions = 5  # len(sc_actions.FUNCTIONS)
         self.experience_buffer = []
         self.val = 0
 
@@ -230,7 +230,7 @@ class StrategicTrainer(BaseTrain):
         # run session and get policies
         action_info = np.zeros([1, self.number_of_actions], dtype=np.float32)
         # list of available actions
-        action_info[0, getAvailableActions(obs[0])] = 1
+        action_info[0, getAvailableActionsStrat(obs[0])] = 1
 
         gen_features, b_queue, selection = addGeneralFeatures(obs[0])
 
@@ -262,8 +262,8 @@ class StrategicTrainer(BaseTrain):
         return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection], done, \
                screen, action_info, obs,
 
-    def select_action(self, action_policy, obs, screen, session, gen_features, b_queue, selection):
-
+    def select_action(self, action_policy, obs, screen, gen_features, b_queue, selection):
+        session = self.session
         # Find action
         # returns list of chosen action intersected with pysc available actions (currently available actions)
         v_actions = getAvailableActionsStrat(obs)
