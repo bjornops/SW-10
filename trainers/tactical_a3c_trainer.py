@@ -25,7 +25,7 @@ class TacticalTrainer(BaseTrain):
         self.val = 0
 
         # Tensorflow summary writer (for tensorboard)
-        self.summaryWriter = tf.summary.FileWriter(self.config.summary_dir + "/" + self.config.map_name + "_" +self.config.test_id + "-" + self.name)
+        self.summaryWriter = tf.summary.FileWriter(self.config.summary_dir + "/" + self.config.map_name + "_" + self.config.test_id + "-" + self.name)
         self.screenSize = self.config.screen_size
         self.exploration = self.config.exploration
         self.mapName = self.config.map_name
@@ -61,6 +61,7 @@ class TacticalTrainer(BaseTrain):
         gen_features = experience_buffer[:, 5]
         obs_build = experience_buffer[:, 6]
         selections = experience_buffer[:, 7]
+        selected_action_array = experience_buffer[:, 8]
         # stores available actions for each timestep
         action_infos = []
 
@@ -122,6 +123,7 @@ class TacticalTrainer(BaseTrain):
                      self.localNetwork.generalFeatures: np.vstack(gen_features),
                      self.localNetwork.buildQueue: np.vstack(obs_build),
                      self.localNetwork.selection: np.vstack(selections),
+                     self.localNetwork.selected_action: np.vstack(selected_action_array)
                      }
 
         # Generate statistics from our network to periodically save and start the network feed
@@ -175,6 +177,7 @@ class TacticalTrainer(BaseTrain):
                                                        self.localNetwork.generalFeatures: self.experience_buffer[-1][5],
                                                        self.localNetwork.buildQueue: self.experience_buffer[-1][6],
                                                        self.localNetwork.selection: self.experience_buffer[-1][7],
+                                                       self.localNetwork.selected_action: self.experience_buffer[-1][8]
                                                        })[
                     0]
                 value_loss, policy_loss, variable_norms = self.train_step()
@@ -241,12 +244,12 @@ class TacticalTrainer(BaseTrain):
                                                 })
 
         # Select action from policies
-        action, action_exp, spatial_action = self.select_action(action_policy,
-                                                                obs[0],
-                                                                screen,
-                                                                gen_features,
-                                                                b_queue,
-                                                                selection)
+        action, action_exp, spatial_action, selected_action_array = self.select_action(action_policy,
+                                                                                       obs[0],
+                                                                                       screen,
+                                                                                       gen_features,
+                                                                                       b_queue,
+                                                                                       selection)
 
         obs = self.env.step(action)  # Perform action on environment
 
@@ -256,8 +259,8 @@ class TacticalTrainer(BaseTrain):
         done = obs[0].last()
 
         # return experience
-        return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection], done, \
-            screen, action_info, obs,
+        return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection, selected_action_array], done, \
+               screen, action_info, obs,
 
     def select_action(self, action_policy, obs, screen, genFeatures, bQueue, selection):
 
@@ -279,13 +282,18 @@ class TacticalTrainer(BaseTrain):
         else:
             act_id = vActions[np.argmax(action_policy[vActions])]
 
+        # 0-array with selected action = 1
+        selected_action_array = np.zeros((1, self.number_of_actions), dtype=np.float32)
+        selected_action_array[0][action_prob] = 1
+
         spatial_policy = self.session.run([self.localNetwork.spatialPolicy],
                                           feed_dict={
-                                             self.localNetwork.screen: screen,
-                                             self.localNetwork.generalFeatures: genFeatures,
-                                             self.localNetwork.buildQueue: bQueue,
-                                             self.localNetwork.selection: selection
-                                             })
+                                              self.localNetwork.screen: screen,
+                                              self.localNetwork.generalFeatures: genFeatures,
+                                              self.localNetwork.buildQueue: bQueue,
+                                              self.localNetwork.selection: selection,
+                                              self.localNetwork.selected_action: selected_action_array
+                                          })
         # Find spatial action
         spatial_action = np.ravel(spatial_policy)  # flatten
         spaction = np.random.choice((self.config.screen_size ** 2), 1, p=spatial_action)
@@ -320,4 +328,4 @@ class TacticalTrainer(BaseTrain):
                 # No spatial action was used
                 spatial_action[0] = 0
                 act_args.append([0])
-        return [sc_actions.FunctionCall(act_id, act_args)], action_exp, spatial_action
+        return [sc_actions.FunctionCall(act_id, act_args)], action_exp, spatial_action, selected_action_array
