@@ -8,7 +8,7 @@ import tensorflow as tf
 from base.base_train import BaseTrain
 from pysc2.env import sc2_env
 from pysc2.lib import actions as sc_actions
-from utils.sw9_utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures
+from utils.utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures, terminate
 
 
 class TacticalTrainer(BaseTrain):
@@ -200,7 +200,7 @@ class TacticalTrainer(BaseTrain):
         # save model and statistics.
         if self.episode_count != 0:
             # makes sure only one of our workers saves the model
-            if self.episode_count % 2 == 0 and self.name == 'worker_0':
+            if self.episode_count % 20 == 0 and self.name == 'worker_0':
                 self.localNetwork.save(self.session)
 
             mean_reward = np.mean(self.episodeRewards[-1:])
@@ -219,6 +219,8 @@ class TacticalTrainer(BaseTrain):
             self.session.run(self.increment)
 
         self.episode_count += 1
+        if self.episode_count >= self.config.total_episodes:
+            terminate(self.config)
 
     def perform_env_action(self, obs):
         # add feature layers
