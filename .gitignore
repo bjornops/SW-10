@@ -155,4 +155,4 @@ fabric.properties
 
 
 ./experiments
-./models/pretrained
+models/pretrained/
