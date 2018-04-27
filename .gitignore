@@ -154,5 +154,5 @@ fabric.properties
 .idea/misc.xml
 
 
-./experiments
+experiments/
 models/pretrained/
