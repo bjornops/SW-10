@@ -1,8 +1,8 @@
 {
-  "map_name": "BuildMarines",
+  "map_name": "CollectMineralShards",
   "test_id": "Black",
   "exp_name": "test",
-  "total_episodes": 2000,
+  "total_episodes": 1,
   "gamma": 0.99,
   "exploration": 0.4,
   "worker_count": 1,
@@ -15,5 +15,6 @@
   "step_mul": 8,
   "max_to_keep": 4,
   "load_model": false,
-  "option_timeout": 20
+  "option_timeout": 20,
+  "shutdown": false
 }

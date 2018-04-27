@@ -11,7 +11,7 @@ from pysc2.env import sc2_env
 from pysc2.lib import actions as scActions
 
 from models.template.sw9_strategic_network_model import StrategicNetwork
-from utils.sw9_utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures, \
+from utils.utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures, \
     getAvailableActionsStrat, getAvailableActionsASCV, getAvailableActionsBB, getAvailableActionsEA, \
     getAvailableActionsBS, getAvailableActionsBSCV  # , addFeatureLayersEA
 
