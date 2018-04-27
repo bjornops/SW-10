@@ -37,7 +37,7 @@ class TacticalNetwork(BaseModel):
                 self.config.map_name + '/value/biases:0': globalVars[15]}
         saver = tf.train.Saver(dict)
         saver.save(sess, os.path.join(self.config.checkpoint_dir, self.config.map_name, self.config.map_name +
-                   self.config.test_id + '.cptk'), self.global_step_tensor.eval())
+                                      self.config.test_id + '.cptk'), self.global_step_tensor.eval())
         print("Model Saved")
 
     def build_model(self):
@@ -49,6 +49,7 @@ class TacticalNetwork(BaseModel):
             self.generalFeatures = tf.placeholder(tf.float32, [None, 11], name='generalFeatures')
             self.buildQueue = tf.placeholder(tf.float32, [None, 5, 7], name='bQueue')
             self.selection = tf.placeholder(tf.float32, [None, 20, 7], name='selection')
+            self.selected_action = tf.placeholder(tf.float32, [None, self.number_of_actions], name='action')
 
             sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]),
                                    num_outputs=16,
@@ -75,19 +76,9 @@ class TacticalNetwork(BaseModel):
                                            activation_fn=tf.tanh,
                                            scope='genFc')
 
-            # Spatial action
-            spatialPolicy = layers.conv2d(sconv2,
-                                          num_outputs=1,
-                                          kernel_size=1,
-                                          stride=1,
-                                          activation_fn=None,
-                                          scope='spPol')
-
-            self.spatialPolicy = tf.nn.softmax(layers.flatten(spatialPolicy))
-
             # Non spatial action and value
-            featFc = tf.concat([layers.flatten(sconv2), infoFc, genFc], axis=1)
-            featFc = layers.fully_connected(featFc,
+            feature_concat = tf.concat([layers.flatten(sconv2), infoFc, genFc], axis=1)
+            featFc = layers.fully_connected(feature_concat,
                                             num_outputs=256,
                                             activation_fn=tf.nn.relu,
                                             scope='feat_fc')
@@ -102,6 +93,25 @@ class TacticalNetwork(BaseModel):
                                                            num_outputs=1,
                                                            activation_fn=None,
                                                            scope='value'), [-1])
+
+            # Output for spatial action
+            spatialPolicy = layers.conv2d(sconv2,
+                                          num_outputs=1,
+                                          kernel_size=1,
+                                          stride=1,
+                                          activation_fn=None,
+                                          scope='spPol')
+
+            spatial_policy_flattened = layers.flatten(spatialPolicy)
+
+            spatial_policy_fc = layers.fully_connected(tf.concat([spatial_policy_flattened,
+                                                                  self.selected_action],
+                                                                 axis=1),
+                                                       num_outputs=self.config.screen_size**2,
+                                                       activation_fn=tf.tanh,
+                                                       scope='sp_fc')
+            self.spatialPolicy = tf.nn.softmax(spatial_policy_fc)
+            # self.spatialPolicy = tf.nn.softmax(layers.flatten(spatialPolicy))
 
     def init_worker_calc_variables(self):
         with tf.variable_scope(self.scope_id):
