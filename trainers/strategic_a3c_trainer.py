@@ -10,7 +10,7 @@ from base.base_train import BaseTrain
 from pysc2.env import sc2_env
 from pysc2.lib import actions as sc_actions
 from utils.sw9_utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures, \
-    getAvailableActionsStrat, getAvailableActionsEA, getAvailableActionsEP, getAvailableActionsCM, \
+    getAvailableActionsStrat, getAvailableActionsEA, getAvailableActionsBB, getAvailableActionsASCV, \
     getAvailableActionsBS, getAvailableActionsBSCV
 
 
@@ -243,27 +243,35 @@ class StrategicTrainer(BaseTrain):
                                                     self.localNetwork.selection: selection,
                                                 })
 
-        # Select action from policies
-        action, action_exp, spatial_action = self.select_action(action_policy,
-                                                                obs[0],
-                                                                screen,
-                                                                gen_features,
-                                                                b_queue,
-                                                                selection)
+        selected_tactical = self.select_tactical(action_policy, obs[0])
 
-        obs = self.env.step(action)  # Perform action on environment
+        print("option:" + str(selected_tactical))
+        reward = 0
+        done = False
+        cur_step = 0
 
-        # Gets reward from current step
-        reward = obs[0].reward
-        # Check if the minigame has finished
-        done = obs[0].last()
+        while not done and cur_step < self.config.option_timeout:
+            # Select action from policies
+            action, action_exp, spatial_action = self.select_action(selected_tactical,
+                                                                    obs[0],
+                                                                    screen,
+                                                                    gen_features,
+                                                                    b_queue,
+                                                                    selection)
+
+            obs = self.env.step(action)  # Perform action on environment
+
+            # Gets reward from current step
+            reward += obs[0].reward
+            # Check if the minigame has finished
+            done = obs[0].last()
+            cur_step += 1
 
         # return experience
         return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection], done, \
-               screen, action_info, obs,
+               screen, action_info, obs
 
-    def select_action(self, action_policy, obs, screen, gen_features, b_queue, selection):
-        session = self.session
+    def select_tactical(self, action_policy, obs):
         # Find action
         # returns list of chosen action intersected with pysc available actions (currently available actions)
         v_actions = getAvailableActionsStrat(obs)
@@ -276,17 +284,16 @@ class StrategicTrainer(BaseTrain):
         # Pick an action with probability norm_actions(gets original probability from
         action_prob = np.random.choice(len(v_actions), p=norm_actions)
         # valid_actions, not the normalized version) gives us action exploration
-        if np.random.rand() < (self.exploration / 3):
-            strat_act_id = np.random.choice(len(v_actions))
-        elif np.random.rand() < self.exploration:
-            strat_act_id = v_actions[action_prob]
-        else:
-            strat_act_id = v_actions[np.argmax(action_policy[v_actions])]
+        strat_act_id = v_actions[action_prob]
+
+        return strat_act_id
+
+    def select_action(self, strat_act_id, obs, screen, gen_features, b_queue, selection):
+        session = self.session
 
         action_info = np.zeros([1, len(sc_actions.FUNCTIONS)], dtype=np.float32)
         # list of available actions
-        action_info[0, getAvailableActions(obs)] = 1
-        # print(str(strat_act_id))
+        # action_info[0, getAvailableActions(obs, self.config.map_name)] = 1
 
         # Set local tactical networks
         tact_net = self.tactical_networks[0]
@@ -299,6 +306,7 @@ class StrategicTrainer(BaseTrain):
         if strat_act_id == 0:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsEA(obs)
+            action_info[0, getAvailableActions(obs, "HHExpandArmy2")] = 1
             tact_action_policy = session.run([tact_net.actionPolicy],
                                              feed_dict={tact_net.screen: screen,
                                                         tact_net.actionInfo: action_info,
@@ -307,7 +315,8 @@ class StrategicTrainer(BaseTrain):
                                                         tact_net.selection: selection})
         elif strat_act_id == 1:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
-            v_actions_tact = getAvailableActionsEP(obs)
+            v_actions_tact = getAvailableActionsBB(obs)
+            action_info[0, getAvailableActions(obs, "HHExpandBarracks")] = 1
             tact_action_policy = session.run([tact_net1.actionPolicy],
                                              feed_dict={tact_net1.screen: screen,
                                                         tact_net1.actionInfo: action_info,
@@ -317,7 +326,8 @@ class StrategicTrainer(BaseTrain):
 
         elif strat_act_id == 2:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
-            v_actions_tact = getAvailableActionsCM(obs)
+            v_actions_tact = getAvailableActionsASCV(obs)
+            action_info[0, getAvailableActions(obs, "HHAssignSCV")] = 1
             tact_action_policy = session.run([tact_net2.actionPolicy],
                                              feed_dict={tact_net2.screen: screen,
                                                         tact_net2.actionInfo: action_info,
@@ -328,6 +338,7 @@ class StrategicTrainer(BaseTrain):
         elif strat_act_id == 3:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsBS(obs)
+            action_info[0, getAvailableActions(obs, "HHBuildSupply")] = 1
             tact_action_policy = session.run([tact_net3.actionPolicy],
                                              feed_dict={tact_net3.screen: screen,
                                                         tact_net3.actionInfo: action_info,
@@ -337,6 +348,7 @@ class StrategicTrainer(BaseTrain):
         elif strat_act_id == 4:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsBSCV(obs)
+            action_info[0, getAvailableActions(obs, "HHBuildSCV")] = 1
             tact_action_policy = session.run([tact_net4.actionPolicy],
                                              feed_dict={tact_net4.screen: screen,
                                                         tact_net4.actionInfo: action_info,
@@ -412,6 +424,7 @@ class StrategicTrainer(BaseTrain):
             target[1] = int(max(0, min(self.screenSize - 1, target[1] - 6)))
 
         # For experience
+        v_actions = getAvailableActionsStrat(obs)
         action_exp = [strat_act_id, v_actions]
 
         act_args = []

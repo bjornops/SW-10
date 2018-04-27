@@ -12,7 +12,7 @@ from pysc2.lib import actions as scActions
 
 from models.template.sw9_strategic_network_model import StrategicNetwork
 from utils.sw9_utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures, \
-    getAvailableActionsStrat, getAvailableActionsCM, getAvailableActionsEP, getAvailableActionsEA, \
+    getAvailableActionsStrat, getAvailableActionsASCV, getAvailableActionsBB, getAvailableActionsEA, \
     getAvailableActionsBS, getAvailableActionsBSCV  # , addFeatureLayersEA
 
 
@@ -365,7 +365,7 @@ class Worker():
                                                       tactNet.previousActions: self.previousAction})
         elif stratAct_id == 1:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
-            vActionsTact = getAvailableActionsEP(obs)
+            vActionsTact = getAvailableActionsBB(obs)
             tactActionPolicy = session.run([tactNet1.actionPolicy],
                                            feed_dict={tactNet1.screen: screen,
                                                       tactNet1.actionInfo: actionInfo,
@@ -376,7 +376,7 @@ class Worker():
 
         elif stratAct_id == 2:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
-            vActionsTact = getAvailableActionsCM(obs)
+            vActionsTact = getAvailableActionsASCV(obs)
             tactActionPolicy = session.run([tactNet2.actionPolicy],
                                            feed_dict={tactNet2.screen: screen,
                                                       tactNet2.actionInfo: actionInfo,

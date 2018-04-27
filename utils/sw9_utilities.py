@@ -53,6 +53,7 @@ def addFeatureLayers(obs):
 
     return featureLayers
 
+
 def addGeneralFeatures(obs):
     genFeat = obs.observation["player"]
     buildQueue = obs.observation["build_queue"]
@@ -78,19 +79,24 @@ def addGeneralFeatures(obs):
 
     return featureLayers, bqueue, selection
 
+
 # Used to add any wanted actions
 def getAvailableActions(obs, map_name):
     availActions = obs.observation['available_actions']
     chosenActions = []
 
-    if map_name == "CollectMinerals":
-        chosenActions = getAvailableActionsCM(obs)
+    if map_name == "HHAssignSCV":
+        chosenActions = getAvailableActionsASCV(obs)
     elif map_name == "CollectMineralShards":
         chosenActions = getAvailableActionsCMS(obs)
-    elif map_name == "ExpandArmy":
+    elif map_name == "HHExpandArmy2":
         chosenActions = getAvailableActionsEA(obs)
-    elif map_name == "ExpandProduction":
-        chosenActions = getAvailableActionsEP(obs)
+    elif map_name == "HHExpandBarracks":
+        chosenActions = getAvailableActionsBB(obs)
+    elif map_name == "HHBuildSCV":
+        chosenActions = getAvailableActionsBSCV(obs)
+    elif map_name == "HHBuildSupply":
+        chosenActions = getAvailableActionsBS(obs)
     else:
         raise Exception("Action set not defined for the map '" + map_name + "'. Also check spelling.")
 
@@ -106,7 +112,7 @@ def getAvailableActionsCMS(obs):
 
     return list(set(availActions) & set(chosenActions))
 
-def getAvailableActionsCM(obs):
+def getAvailableActionsASCV(obs):
     availActions = obs.observation['available_actions']
     chosenActions = []
 
@@ -161,7 +167,7 @@ def getAvailableActionsBSCV(obs):
     return list(set(availActions) & set(chosenActions))
 
 
-def getAvailableActionsEP(obs):
+def getAvailableActionsBB(obs):
     availActions = obs.observation['available_actions']
     chosenActions = []
 
