@@ -25,7 +25,7 @@ class TacticalTrainer(BaseTrain):
         self.val = 0
 
         # Tensorflow summary writer (for tensorboard)
-        self.summaryWriter = tf.summary.FileWriter("log/train" + self.config.map_name + self.config.test_id + "-" + self.name)
+        self.summaryWriter = tf.summary.FileWriter(self.config.summary_dir + "/" + self.config.map_name + "_" +self.config.test_id + "-" + self.name)
         self.screenSize = self.config.screen_size
         self.exploration = self.config.exploration
         self.mapName = self.config.map_name
@@ -200,7 +200,7 @@ class TacticalTrainer(BaseTrain):
         # save model and statistics.
         if self.episode_count != 0:
             # makes sure only one of our workers saves the model
-            if self.episode_count % 25 == 0 and self.name == 'worker_0':
+            if self.episode_count % 2 == 0 and self.name == 'worker_0':
                 self.localNetwork.save(self.session)
 
             mean_reward = np.mean(self.episodeRewards[-1:])
