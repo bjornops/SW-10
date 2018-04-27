@@ -1,5 +1,7 @@
 import numpy as np
 import tensorflow as tf
+import sys, os
+
 
 from pysc2.lib import features
 from pysc2.lib import actions as scActions
@@ -259,3 +261,13 @@ def getAvailableActionsStrat(obs):
     chosenActions.append(4)
 
     return chosenActions
+
+
+def terminate(config):
+    print("Terminating program")
+
+    if config.shutdown:
+       os.system("shutdown -h -t 59")
+       sys.exit()
+    else:
+        sys.exit()
