@@ -74,16 +74,6 @@ class StrategicNetwork(BaseModel):
                                            activation_fn=tf.tanh,
                                            scope='genFc')
 
-            # Spatial action
-            spatial_policy = layers.conv2d(sconv2,
-                                          num_outputs=1,
-                                          kernel_size=1,
-                                          stride=1,
-                                          activation_fn=None,
-                                          scope='spPol')
-
-            self.spatial_policy = tf.nn.softmax(layers.flatten(spatial_policy))
-
             # Non spatial action and value
             feat_fc = tf.concat([layers.flatten(sconv2), infoFc, genFc], axis=1)
             feat_fc = layers.fully_connected(feat_fc,

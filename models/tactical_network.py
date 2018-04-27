@@ -27,14 +27,16 @@ class TacticalNetwork(BaseModel):
                 self.config.map_name + '/info_fc/biases:0': globalVars[5],
                 self.config.map_name + '/genFc/weights:0': globalVars[6],
                 self.config.map_name + '/genFc/biases:0': globalVars[7],
-                self.config.map_name + '/spPol/weights:0': globalVars[8],
-                self.config.map_name + '/spPol/biases:0': globalVars[9],
-                self.config.map_name + '/feat_fc/weights:0': globalVars[10],
-                self.config.map_name + '/feat_fc/biases:0': globalVars[11],
-                self.config.map_name + '/non_spatial_action/weights:0': globalVars[12],
-                self.config.map_name + '/non_spatial_action/biases:0': globalVars[13],
-                self.config.map_name + '/value/weights:0': globalVars[14],
-                self.config.map_name + '/value/biases:0': globalVars[15]}
+                self.config.map_name + '/feat_fc/weights:0': globalVars[8],
+                self.config.map_name + '/feat_fc/biases:0': globalVars[9],
+                self.config.map_name + '/non_spatial_action/weights:0': globalVars[10],
+                self.config.map_name + '/non_spatial_action/biases:0': globalVars[11],
+                self.config.map_name + '/value/weights:0': globalVars[12],
+                self.config.map_name + '/value/biases:0': globalVars[13],
+                self.config.map_name + '/spPol/weights:0': globalVars[14],
+                self.config.map_name + '/spPol/biases:0': globalVars[15],
+                self.config.map_name + '/sp_fc/weights:0': globalVars[16],
+                self.config.map_name + '/sp_fc/biases:0': globalVars[17]}
         saver = tf.train.Saver(dict)
         saver.save(sess, os.path.join(self.config.checkpoint_dir, self.config.map_name, self.config.map_name +
                                       self.config.test_id + '.cptk'), self.global_step_tensor.eval())
