@@ -227,7 +227,7 @@ class TacticalTrainer(BaseTrain):
         # run session and get policies
         action_info = np.zeros([1, self.number_of_actions], dtype=np.float32)
         # list of available actions
-        action_info[0, getAvailableActions(obs[0])] = 1
+        action_info[0, getAvailableActions(obs[0], self.mapName)] = 1
 
         gen_features, b_queue, selection = addGeneralFeatures(obs[0])
 
@@ -264,7 +264,7 @@ class TacticalTrainer(BaseTrain):
         # Find action
 
         # returns list of chosen action intersected with pysc available actions (currently available actions)
-        vActions = getAvailableActions(obs)
+        vActions = getAvailableActions(obs, self.mapName)
         # flatten
         action_policy = np.ravel(action_policy)
         # Cuts off any unavailable actions
