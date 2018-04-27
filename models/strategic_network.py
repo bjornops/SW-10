@@ -44,9 +44,9 @@ class StrategicNetwork(BaseModel):
             # Extract features
             self.screen = tf.placeholder(tf.float32, [None, self.config.feature_count, self.config.screen_size,
                                                       self.config.screen_size], name='screen')
-            self.action_info = tf.placeholder(tf.float32, [None, self.number_of_actions], name='actionInfo')
-            self.general_features = tf.placeholder(tf.float32, [None, 11], name='generalFeatures')
-            self.build_queue = tf.placeholder(tf.float32, [None, 5, 7], name='bQueue')
+            self.actionInfo = tf.placeholder(tf.float32, [None, self.number_of_actions], name='actionInfo')
+            self.generalFeatures = tf.placeholder(tf.float32, [None, 11], name='generalFeatures')
+            self.buildQueue = tf.placeholder(tf.float32, [None, 5, 7], name='bQueue')
             self.selection = tf.placeholder(tf.float32, [None, 20, 7], name='selection')
 
             sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]),
@@ -60,14 +60,14 @@ class StrategicNetwork(BaseModel):
                                    stride=1,
                                    scope='sconv2')
 
-            infoFc = layers.fully_connected(tf.concat([layers.flatten(self.action_info)],
+            infoFc = layers.fully_connected(tf.concat([layers.flatten(self.actionInfo)],
                                                       axis=1),
                                             num_outputs=128,
                                             activation_fn=tf.tanh,
                                             scope='info_fc')
 
-            genFc = layers.fully_connected(tf.concat([layers.flatten(self.general_features),
-                                                      layers.flatten(self.build_queue),
+            genFc = layers.fully_connected(tf.concat([layers.flatten(self.generalFeatures),
+                                                      layers.flatten(self.buildQueue),
                                                       layers.flatten(self.selection)],
                                                      axis=1),
                                            num_outputs=128,
@@ -92,10 +92,10 @@ class StrategicNetwork(BaseModel):
                                             scope='feat_fc')
 
             # Output layers for policy and value estimations
-            self.action_policy = layers.fully_connected(feat_fc,
-                                                        num_outputs=self.number_of_actions,
-                                                        activation_fn=tf.nn.softmax,
-                                                        scope='non_spatial_action')
+            self.actionPolicy = layers.fully_connected(feat_fc,
+                                                       num_outputs=self.number_of_actions,
+                                                       activation_fn=tf.nn.softmax,
+                                                       scope='non_spatial_action')
 
             self.value = tf.reshape(layers.fully_connected(feat_fc,
                                                            num_outputs=1,
@@ -105,42 +105,42 @@ class StrategicNetwork(BaseModel):
     def init_worker_calc_variables(self):
         with tf.variable_scope(self.scope_id):
             # stores which actions were valid at a given time
-            self.valid_actions = tf.placeholder(tf.float32, [None, self.number_of_actions], name="pVActions")
+            self.validActions = tf.placeholder(tf.float32, [None, self.number_of_actions], name="pVActions")
             # stores which action was selected at a given time
-            self.selected_action = tf.placeholder(tf.float32, [None, self.number_of_actions], name="pSActions")
+            self.selectedAction = tf.placeholder(tf.float32, [None, self.number_of_actions], name="pSActions")
             # stores the picked spatial
-            self.selected_spatial_action = tf.placeholder(tf.float32, [None, self.config.screen_size ** 2], name="pSPActions")
+            self.selectedSpatialAction = tf.placeholder(tf.float32, [None, self.config.screen_size ** 2], name="pSPActions")
             # used for storing whether the current action made use of a spatial action
-            self.valid_spatial_action = tf.placeholder(tf.float32, [None], name="pVSActions")
+            self.validSpatialAction = tf.placeholder(tf.float32, [None], name="pVSActions")
             # stores the value we are aiming for
-            self.value_target = tf.placeholder(tf.float32, [None], name="pVT")
+            self.valueTarget = tf.placeholder(tf.float32, [None], name="pVT")
 
 
             ##calc
             # policy(spatial|state)
-            temp_spatial_policy = tf.reduce_sum(self.spatial_policy * self.selected_spatial_action, axis=1)
+            temp_spatial_policy = tf.reduce_sum(self.spatial_policy * self.selectedSpatialAction, axis=1)
             # log(policy(spatial|state))
             logOfSpatialPolicy = tf.log(tf.clip_by_value(temp_spatial_policy, 1e-10, 1.))
             # we use clip by value to ensure no v <= 0 and v > 1 values
-            validSpatialPolicy = logOfSpatialPolicy * self.valid_spatial_action
+            validSpatialPolicy = logOfSpatialPolicy * self.validSpatialAction
 
             # policy(action|state)
-            tempActionPolicy = tf.reduce_sum(self.action_policy * self.selected_action, axis=1)
-            validActionPolicy = tf.clip_by_value(tf.reduce_sum(self.action_policy * self.valid_actions), 1e-10, 1)
+            tempActionPolicy = tf.reduce_sum(self.actionPolicy * self.selectedAction, axis=1)
+            validActionPolicy = tf.clip_by_value(tf.reduce_sum(self.actionPolicy * self.validActions), 1e-10, 1)
             validActionPolicy = tempActionPolicy / validActionPolicy
             validActionPolicy = tf.log(tf.clip_by_value(validActionPolicy, 1e-10, 1.))
 
             validPolicy = validActionPolicy + validSpatialPolicy
 
             # Gt - v(st) = advantage?
-            advantage = tf.stop_gradient(self.value_target - self.value)
+            advantage = tf.stop_gradient(self.valueTarget - self.value)
             self.policyLoss = - tf.reduce_mean(validPolicy * advantage)
 
             self.valueLoss = - tf.reduce_mean(self.value * advantage)
 
             self.learningRate = tf.placeholder(tf.float32, None, name='learning_rate')
             # entropy regularization
-            self.entropyLoss = - (tf.reduce_sum(self.action_policy * tf.log(self.action_policy)) +
+            self.entropyLoss = - (tf.reduce_sum(self.actionPolicy * tf.log(self.actionPolicy)) +
                                   tf.reduce_sum(self.spatial_policy * tf.log(self.spatial_policy)))
             self.loss = self.policyLoss + self.config.value_factor * self.valueLoss + self.config.entropy * self.entropyLoss
 
