@@ -93,7 +93,7 @@ def getAvailableActions(obs, map_name):
         chosenActions = getAvailableActionsCMS(obs)
     elif map_name == "HHExpandArmy2":
         chosenActions = getAvailableActionsEA(obs)
-    elif map_name == "HHExpandBarracks":
+    elif map_name == "HHBuildBarracks":
         chosenActions = getAvailableActionsBB(obs)
     elif map_name == "HHBuildSCV":
         chosenActions = getAvailableActionsBSCV(obs)
