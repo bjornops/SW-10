@@ -9,15 +9,12 @@ class TacticalNetwork(BaseModel):
         super(TacticalNetwork, self).__init__(config)
         self.number_of_actions = 524  # TODO solve number of actions
         self.scope_id = scope_id
-        self.init_saver()
         self.build_model()
+        self.init_saver()
 
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.
-        self.saver = tf.train.Saver(max_to_keep=self.config.max_to_keep)
 
-    def save(self, sess):
-        print("Saving model...")
         globalVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'global')
         dict = {self.config.map_name + '/sconv1/weights:0': globalVars[0],
                 self.config.map_name + '/sconv1/biases:0': globalVars[1],
@@ -35,8 +32,12 @@ class TacticalNetwork(BaseModel):
                 self.config.map_name + '/non_spatial_action/biases:0': globalVars[13],
                 self.config.map_name + '/value/weights:0': globalVars[14],
                 self.config.map_name + '/value/biases:0': globalVars[15]}
-        saver = tf.train.Saver(dict)
-        saver.save(sess, os.path.join(self.config.checkpoint_dir, self.config.map_name, self.config.map_name +
+
+        self.saver = tf.train.Saver(dict, max_to_keep=self.config.max_to_keep)
+
+    def save(self, sess):
+        print("Saving model...")
+        self.saver.save(sess, os.path.join(self.config.checkpoint_dir, self.config.map_name, self.config.map_name +
                    self.config.test_id + '.cptk'), self.global_step_tensor.eval())
         print("Model Saved")
 
