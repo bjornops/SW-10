@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import math
 import numpy as np
+import os
 import tensorflow as tf
 from base.base_train import BaseTrain
 from pysc2.env import sc2_env
