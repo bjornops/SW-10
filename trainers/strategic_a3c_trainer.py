@@ -316,7 +316,7 @@ class StrategicTrainer(BaseTrain):
         elif strat_act_id == 1:
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsBB(obs)
-            action_info[0, getAvailableActions(obs, "HHExpandBarracks")] = 1
+            action_info[0, getAvailableActions(obs, "HHBuildBarracks")] = 1
             tact_action_policy = session.run([tact_net1.actionPolicy],
                                              feed_dict={tact_net1.screen: screen,
                                                         tact_net1.actionInfo: action_info,
