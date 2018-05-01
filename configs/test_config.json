@@ -2,7 +2,7 @@
   "map_name": "CollectMineralShards",
   "test_id": "Black",
   "exp_name": "test",
-  "total_episodes": 1,
+  "total_episodes": 50,
   "gamma": 0.99,
   "exploration": 1,
   "worker_count": 1,
@@ -17,6 +17,6 @@
   "load_model": false,
   "option_timeout": 20,
   "shutdown": false,
-  "notify_by_email": true,
+  "notify_by_email": false,
   "email_recipient": "******"
 }
