@@ -407,10 +407,7 @@ class StrategicTrainer(BaseTrain):
         # flatten
         spatial_action = np.ravel(spatial_policy)
         spaction = np.random.choice((64 * 64), 1, p=spatial_action)
-        if np.random.rand() < self.exploration:
-            spatial_action = [1, spaction]
-        else:
-            spatial_action = [1, np.argmax(spatial_action)]
+        spatial_action = [1, spaction]
         target = [int(spatial_action[1] // self.screenSize), int(spatial_action[1] % self.screenSize)]
 
         spatial_action[1] = target[0] * self.screenSize + target[1]
