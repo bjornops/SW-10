@@ -276,10 +276,7 @@ class TacticalTrainer(BaseTrain):
         # Pick an action with probabillity normActions(gets original probability from
         action_prob = np.random.choice(len(vActions), p=normalized_actions)
         # validActions, not the normalized version) gives us action exploration
-        if np.random.rand() < self.exploration:
-            act_id = vActions[action_prob]
-        else:
-            act_id = vActions[np.argmax(action_policy[vActions])]
+        act_id = vActions[action_prob]
 
         spatial_policy = self.session.run([self.localNetwork.spatialPolicy],
                                           feed_dict={
@@ -291,10 +288,7 @@ class TacticalTrainer(BaseTrain):
         # Find spatial action
         spatial_action = np.ravel(spatial_policy)  # flatten
         spaction = np.random.choice((self.config.screen_size ** 2), 1, p=spatial_action)
-        if np.random.rand() < self.exploration:
-            spatial_action = [1, spaction]
-        else:
-            spatial_action = [1, np.argmax(spatial_action)]
+        spatial_action = [1, spaction]
         target = [int(spatial_action[1] // self.screenSize), int(spatial_action[1] % self.screenSize)]
 
         spatial_action[1] = target[0] * self.screenSize + target[1]

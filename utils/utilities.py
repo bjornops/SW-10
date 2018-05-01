@@ -5,6 +5,8 @@ import sys, os
 
 from pysc2.lib import features
 from pysc2.lib import actions as scActions
+from utils.email import notify_email
+
 
 
 # Used to set the local worker network to that of the global network (copy)
@@ -262,9 +264,11 @@ def getAvailableActionsStrat(obs):
 
     return chosenActions
 
-
 def terminate(config):
     print("Terminating program")
+
+    if config.notify_by_email:
+        notify_email()
 
     if config.shutdown:
        os.system("shutdown -h -t 59")
