@@ -7,5 +7,5 @@ def StoreAsCSV(option):
 
     with open(filename, 'w') as f:
         for o in option:
-            data = "option:%d,timesteps:%d,reward:%d\n" % (o[0], o[1], o[2])
+            data = "%d,%d,%d\n" % (o[0], o[1], o[2])
             f.write(data)
