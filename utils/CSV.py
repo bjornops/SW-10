@@ -6,6 +6,5 @@ def StoreAsCSV(option):
     filename = config.exp_name + "_" + config.map_name + "_" + config.test_id
 
     with open(filename, 'w') as f:
-        for o in option:
-            data = "%d,%d,%d\n" % (o[0], o[1], o[2])
-            f.write(data)
+        data = "%d,%d,%d\n" % (option[0], option[1], option[2])
+        f.write(data)
