@@ -12,6 +12,7 @@ from pysc2.lib import actions as sc_actions
 from utils.utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures, \
     getAvailableActionsStrat, getAvailableActionsEA, getAvailableActionsBB, getAvailableActionsASCV, \
     getAvailableActionsBS, getAvailableActionsBSCV
+from utils.CSV import StoreAsCSV
 
 
 class StrategicTrainer(BaseTrain):
@@ -266,6 +267,10 @@ class StrategicTrainer(BaseTrain):
             # Check if the minigame has finished
             done = obs[0].last()
             cur_step += 1
+
+        # Adv. log
+        selected_option = [selected_tactical, cur_step, reward]
+        StoreAsCSV(selected_option)
 
         # return experience
         return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection], done, \
