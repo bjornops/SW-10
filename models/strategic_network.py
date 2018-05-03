@@ -115,22 +115,13 @@ class StrategicNetwork(BaseModel):
             # stores the value we are aiming for
             self.valueTarget = tf.placeholder(tf.float32, [None], name="pVT")
 
-
-            ##calc
-            # policy(spatial|state)
-            temp_spatial_policy = tf.reduce_sum(self.spatial_policy * self.selectedSpatialAction, axis=1)
-            # log(policy(spatial|state))
-            logOfSpatialPolicy = tf.log(tf.clip_by_value(temp_spatial_policy, 1e-10, 1.))
-            # we use clip by value to ensure no v <= 0 and v > 1 values
-            validSpatialPolicy = logOfSpatialPolicy * self.validSpatialAction
-
             # policy(action|state)
             tempActionPolicy = tf.reduce_sum(self.actionPolicy * self.selectedAction, axis=1)
             validActionPolicy = tf.clip_by_value(tf.reduce_sum(self.actionPolicy * self.validActions), 1e-10, 1)
             validActionPolicy = tempActionPolicy / validActionPolicy
             validActionPolicy = tf.log(tf.clip_by_value(validActionPolicy, 1e-10, 1.))
 
-            validPolicy = validActionPolicy + validSpatialPolicy
+            validPolicy = validActionPolicy
 
             # Gt - v(st) = advantage?
             advantage = tf.stop_gradient(self.valueTarget - self.value)
