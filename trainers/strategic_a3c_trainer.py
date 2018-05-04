@@ -119,8 +119,6 @@ class StrategicTrainer(BaseTrain):
                      self.localNetwork.actionInfo: action_infos,
                      self.localNetwork.validActions: valid_actions,
                      self.localNetwork.selectedAction: selected_action,
-                     self.localNetwork.selectedSpatialAction: selected_spatial_action,
-                     self.localNetwork.validSpatialAction: valid_spatial_action,
                      self.localNetwork.learningRate: lr,
                      self.localNetwork.generalFeatures: np.vstack(gen_features),
                      self.localNetwork.buildQueue: np.vstack(obs_build),
