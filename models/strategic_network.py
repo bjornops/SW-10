@@ -74,16 +74,6 @@ class StrategicNetwork(BaseModel):
                                            activation_fn=tf.tanh,
                                            scope='genFc')
 
-            # Spatial action
-            spatial_policy = layers.conv2d(sconv2,
-                                          num_outputs=1,
-                                          kernel_size=1,
-                                          stride=1,
-                                          activation_fn=None,
-                                          scope='spPol')
-
-            self.spatial_policy = tf.nn.softmax(layers.flatten(spatial_policy))
-
             # Non spatial action and value
             feat_fc = tf.concat([layers.flatten(sconv2), infoFc, genFc], axis=1)
             feat_fc = layers.fully_connected(feat_fc,
@@ -108,10 +98,6 @@ class StrategicNetwork(BaseModel):
             self.validActions = tf.placeholder(tf.float32, [None, self.number_of_actions], name="pVActions")
             # stores which action was selected at a given time
             self.selectedAction = tf.placeholder(tf.float32, [None, self.number_of_actions], name="pSActions")
-            # stores the picked spatial
-            self.selectedSpatialAction = tf.placeholder(tf.float32, [None, self.config.screen_size ** 2], name="pSPActions")
-            # used for storing whether the current action made use of a spatial action
-            self.validSpatialAction = tf.placeholder(tf.float32, [None], name="pVSActions")
             # stores the value we are aiming for
             self.valueTarget = tf.placeholder(tf.float32, [None], name="pVT")
 
@@ -131,8 +117,7 @@ class StrategicNetwork(BaseModel):
 
             self.learningRate = tf.placeholder(tf.float32, None, name='learning_rate')
             # entropy regularization
-            self.entropyLoss = - (tf.reduce_sum(self.actionPolicy * tf.log(self.actionPolicy)) +
-                                  tf.reduce_sum(self.spatial_policy * tf.log(self.spatial_policy)))
+            self.entropyLoss = - (tf.reduce_sum(self.actionPolicy * tf.log(self.actionPolicy)))
             self.loss = self.policyLoss + self.config.value_factor * self.valueLoss + self.config.entropy * self.entropyLoss
 
             optimizer = tf.train.RMSPropOptimizer(self.learningRate, decay=0.99, epsilon=1e-10)
