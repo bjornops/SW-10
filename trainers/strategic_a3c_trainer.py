@@ -371,36 +371,46 @@ class StrategicTrainer(BaseTrain):
         action_prob_tact = np.random.choice(len(v_actions_tact), p=norm_actions_tact)
         act_id = v_actions_tact[action_prob_tact]
 
+        # Selected action input for coordinate selection
+        selected_action_array = np.zeros((1, len(sc_actions.FUNCTIONS)), dtype=np.float32)
+        selected_action_array[0][act_id] = 1
+
         if strat_act_id == 0:
             spatial_policy = session.run([tact_net.spatialPolicy],
                                          feed_dict={tact_net.screen: screen,
                                                     tact_net.generalFeatures: gen_features,
                                                     tact_net.buildQueue: b_queue,
-                                                    tact_net.selection: selection})
+                                                    tact_net.selection: selection,
+                                                    tact_net.selected_action: selected_action_array
+                                                    })
         elif strat_act_id == 1:
             spatial_policy = session.run([tact_net1.spatialPolicy],
                                          feed_dict={tact_net1.screen: screen,
                                                     tact_net1.generalFeatures: gen_features,
                                                     tact_net1.buildQueue: b_queue,
-                                                    tact_net1.selection: selection})
+                                                    tact_net1.selection: selection,
+                                                    tact_net1.selected_action: selected_action_array})
         elif strat_act_id == 2:
             spatial_policy = session.run([tact_net2.spatialPolicy],
                                          feed_dict={tact_net2.screen: screen,
                                                     tact_net2.generalFeatures: gen_features,
                                                     tact_net2.buildQueue: b_queue,
-                                                    tact_net2.selection: selection})
+                                                    tact_net2.selection: selection,
+                                                    tact_net2.selected_action: selected_action_array})
         elif strat_act_id == 3:
             spatial_policy = session.run([tact_net3.spatialPolicy],
                                          feed_dict={tact_net3.screen: screen,
                                                     tact_net3.generalFeatures: gen_features,
                                                     tact_net3.buildQueue: b_queue,
-                                                    tact_net3.selection: selection})
+                                                    tact_net3.selection: selection,
+                                                    tact_net3.selected_action: selected_action_array})
         elif strat_act_id == 4:
             spatial_policy = session.run([tact_net4.spatialPolicy],
                                          feed_dict={tact_net4.screen: screen,
                                                     tact_net4.generalFeatures: gen_features,
                                                     tact_net4.buildQueue: b_queue,
-                                                    tact_net4.selection: selection})
+                                                    tact_net4.selection: selection,
+                                                    tact_net4.selected_action: selected_action_array})
 
         # Find spatial action
 
