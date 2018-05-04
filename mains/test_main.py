@@ -38,6 +38,7 @@ def main(argv):
     models = []
     for i in range(config.worker_count):
         model = TacticalNetwork(config, "worker_" + str(i) + "_scope")
+        model.init_saver()
         model.init_worker_calc_variables()
         models.append(model)
 

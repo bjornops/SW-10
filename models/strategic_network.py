@@ -98,10 +98,6 @@ class StrategicNetwork(BaseModel):
             self.validActions = tf.placeholder(tf.float32, [None, self.number_of_actions], name="pVActions")
             # stores which action was selected at a given time
             self.selectedAction = tf.placeholder(tf.float32, [None, self.number_of_actions], name="pSActions")
-            # stores the picked spatial
-            self.selectedSpatialAction = tf.placeholder(tf.float32, [None, self.config.screen_size ** 2], name="pSPActions")
-            # used for storing whether the current action made use of a spatial action
-            self.validSpatialAction = tf.placeholder(tf.float32, [None], name="pVSActions")
             # stores the value we are aiming for
             self.valueTarget = tf.placeholder(tf.float32, [None], name="pVT")
 
