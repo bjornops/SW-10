@@ -101,6 +101,12 @@ def getAvailableActions(obs, map_name):
         chosenActions = getAvailableActionsBSCV(obs)
     elif map_name == "HHBuildSupply":
         chosenActions = getAvailableActionsBS(obs)
+    elif map_name == "BuildMarines":
+        chosenActions = list(set(getAvailableActions(obs, "HHAssignSCV")) |
+                             set(getAvailableActions(obs, "HHExpandArmy2")) |
+                             set(getAvailableActions(obs, "HHBuildBarracks")) |
+                             set(getAvailableActions(obs, "HHBuildSCV")) |
+                             set(getAvailableActions(obs, "HHBuildSupply")))
     else:
         raise Exception("Action set not defined for the map '" + map_name + "'. Also check spelling.")
 
