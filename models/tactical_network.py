@@ -10,7 +10,7 @@ class TacticalNetwork(BaseModel):
         self.number_of_actions = 524  # TODO solve number of actions
         self.scope_id = scope_id
         self.build_model()
-        self.init_saver()
+        # self.init_saver()
 
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.
