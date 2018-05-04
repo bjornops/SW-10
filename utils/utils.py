@@ -30,14 +30,16 @@ def tactical_network_setup(config):
              'HHExpandArmy2/info_fc/biases:0': vars[5],
              'HHExpandArmy2/genFc/weights:0': vars[6],
              'HHExpandArmy2/genFc/biases:0': vars[7],
-             'HHExpandArmy2/spPol/weights:0': vars[8],
-             'HHExpandArmy2/spPol/biases:0': vars[9],
-             'HHExpandArmy2/feat_fc/weights:0': vars[10],
-             'HHExpandArmy2/feat_fc/biases:0': vars[11],
-             'HHExpandArmy2/non_spatial_action/weights:0': vars[12],
-             'HHExpandArmy2/non_spatial_action/biases:0': vars[13],
-             'HHExpandArmy2/value/weights:0': vars[14],
-             'HHExpandArmy2/value/biases:0': vars[15]}
+             'HHExpandArmy2/feat_fc/weights:0': vars[8],
+             'HHExpandArmy2/feat_fc/biases:0': vars[9],
+             'HHExpandArmy2/non_spatial_action/weights:0': vars[10],
+             'HHExpandArmy2/non_spatial_action/biases:0': vars[11],
+             'HHExpandArmy2/value/weights:0': vars[12],
+             'HHExpandArmy2/value/biases:0': vars[13],
+             'HHExpandArmy2/spPol/weights:0': vars[14],
+             'HHExpandArmy2/spPol/biases:0': vars[15],
+             'HHExpandArmy2/sp_fc/weights:0': vars[16],
+             'HHExpandArmy2/sp_fc/biases:0': vars[17]}
 
     vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'HHBuildBarracks')
 
@@ -49,14 +51,16 @@ def tactical_network_setup(config):
              'HHBuildBarracks/info_fc/biases:0': vars[5],
              'HHBuildBarracks/genFc/weights:0': vars[6],
              'HHBuildBarracks/genFc/biases:0': vars[7],
-             'HHBuildBarracks/spPol/weights:0': vars[8],
-             'HHBuildBarracks/spPol/biases:0': vars[9],
-             'HHBuildBarracks/feat_fc/weights:0': vars[10],
-             'HHBuildBarracks/feat_fc/biases:0': vars[11],
-             'HHBuildBarracks/non_spatial_action/weights:0': vars[12],
-             'HHBuildBarracks/non_spatial_action/biases:0': vars[13],
-             'HHBuildBarracks/value/weights:0': vars[14],
-             'HHBuildBarracks/value/biases:0': vars[15]}
+             'HHBuildBarracks/feat_fc/weights:0': vars[8],
+             'HHBuildBarracks/feat_fc/biases:0': vars[9],
+             'HHBuildBarracks/non_spatial_action/weights:0': vars[10],
+             'HHBuildBarracks/non_spatial_action/biases:0': vars[11],
+             'HHBuildBarracks/value/weights:0': vars[12],
+             'HHBuildBarracks/value/biases:0': vars[13],
+             'HHBuildBarracks/spPol/weights:0': vars[14],
+             'HHBuildBarracks/spPol/biases:0': vars[15],
+             'HHBuildBarracks/sp_fc/weights:0': vars[16],
+             'HHBuildBarracks/sp_fc/biases:0': vars[17]}
 
     vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'HHAssignSCV')
 
@@ -68,14 +72,16 @@ def tactical_network_setup(config):
              'HHAssignSCV/info_fc/biases:0': vars[5],
              'HHAssignSCV/genFc/weights:0': vars[6],
              'HHAssignSCV/genFc/biases:0': vars[7],
-             'HHAssignSCV/spPol/weights:0': vars[8],
-             'HHAssignSCV/spPol/biases:0': vars[9],
-             'HHAssignSCV/feat_fc/weights:0': vars[10],
-             'HHAssignSCV/feat_fc/biases:0': vars[11],
-             'HHAssignSCV/non_spatial_action/weights:0': vars[12],
-             'HHAssignSCV/non_spatial_action/biases:0': vars[13],
-             'HHAssignSCV/value/weights:0': vars[14],
-             'HHAssignSCV/value/biases:0': vars[15]}
+             'HHAssignSCV/feat_fc/weights:0': vars[8],
+             'HHAssignSCV/feat_fc/biases:0': vars[9],
+             'HHAssignSCV/non_spatial_action/weights:0': vars[10],
+             'HHAssignSCV/non_spatial_action/biases:0': vars[11],
+             'HHAssignSCV/value/weights:0': vars[12],
+             'HHAssignSCV/value/biases:0': vars[13],
+             'HHAssignSCV/spPol/weights:0': vars[14],
+             'HHAssignSCV/spPol/biases:0': vars[15],
+             'HHAssignSCV/sp_fc/weights:0': vars[16],
+             'HHAssignSCV/sp_fc/biases:0': vars[17]}
 
     vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'HHBuildSupply')
 
@@ -87,14 +93,16 @@ def tactical_network_setup(config):
              'HHBuildSupply/info_fc/biases:0': vars[5],
              'HHBuildSupply/genFc/weights:0': vars[6],
              'HHBuildSupply/genFc/biases:0': vars[7],
-             'HHBuildSupply/spPol/weights:0': vars[8],
-             'HHBuildSupply/spPol/biases:0': vars[9],
-             'HHBuildSupply/feat_fc/weights:0': vars[10],
-             'HHBuildSupply/feat_fc/biases:0': vars[11],
-             'HHBuildSupply/non_spatial_action/weights:0': vars[12],
-             'HHBuildSupply/non_spatial_action/biases:0': vars[13],
-             'HHBuildSupply/value/weights:0': vars[14],
-             'HHBuildSupply/value/biases:0': vars[15]}
+             'HHBuildSupply/feat_fc/weights:0': vars[8],
+             'HHBuildSupply/feat_fc/biases:0': vars[9],
+             'HHBuildSupply/non_spatial_action/weights:0': vars[10],
+             'HHBuildSupply/non_spatial_action/biases:0': vars[11],
+             'HHBuildSupply/value/weights:0': vars[12],
+             'HHBuildSupply/value/biases:0': vars[13],
+             'HHBuildSupply/spPol/weights:0': vars[14],
+             'HHBuildSupply/spPol/biases:0': vars[15],
+             'HHBuildSupply/sp_fc/weights:0': vars[16],
+             'HHBuildSupply/sp_fc/biases:0': vars[17]}
 
     vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'HHBuildSCV')
 
@@ -106,14 +114,16 @@ def tactical_network_setup(config):
              'HHBuildSCV/info_fc/biases:0': vars[5],
              'HHBuildSCV/genFc/weights:0': vars[6],
              'HHBuildSCV/genFc/biases:0': vars[7],
-             'HHBuildSCV/spPol/weights:0': vars[8],
-             'HHBuildSCV/spPol/biases:0': vars[9],
-             'HHBuildSCV/feat_fc/weights:0': vars[10],
-             'HHBuildSCV/feat_fc/biases:0': vars[11],
-             'HHBuildSCV/non_spatial_action/weights:0': vars[12],
-             'HHBuildSCV/non_spatial_action/biases:0': vars[13],
-             'HHBuildSCV/value/weights:0': vars[14],
-             'HHBuildSCV/value/biases:0': vars[15]}
+             'HHBuildSCV/feat_fc/weights:0': vars[8],
+             'HHBuildSCV/feat_fc/biases:0': vars[9],
+             'HHBuildSCV/non_spatial_action/weights:0': vars[10],
+             'HHBuildSCV/non_spatial_action/biases:0': vars[11],
+             'HHBuildSCV/value/weights:0': vars[12],
+             'HHBuildSCV/value/biases:0': vars[13],
+             'HHBuildSCV/spPol/weights:0': vars[14],
+             'HHBuildSCV/spPol/biases:0': vars[15],
+             'HHBuildSCV/sp_fc/weights:0': vars[16],
+             'HHBuildSCV/sp_fc/biases:0': vars[17]}
 
     tactical_networks = [tactNetwork0, tactNetwork1, tactNetwork2, tactNetwork3, tactNetwork4]
     dict = [dict1, dict2, dict3, dict4, dict5]
