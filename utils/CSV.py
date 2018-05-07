@@ -1,9 +1,10 @@
 from utils.config import process_config
+import os
 
 
 def StoreAsCSV(option_log_list):
     config = process_config("../configs/test_config.json")
-    filename = config.exp_name + "_" + config.map_name + "_" + config.test_id
+    filename = os.path.join("..", "experiments", config.exp_name, config.map_name + "_" + config.test_id + ".csv")
 
     for o in option_log_list:
         with open(filename, 'a+') as f:
