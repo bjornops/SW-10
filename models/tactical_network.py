@@ -148,7 +148,7 @@ class TacticalNetwork(BaseModel):
 
             # Gt - v(st) = advantage?
             advantage = tf.stop_gradient(self.valueTarget - self.value)
-            self.policyLoss = - tf.reduce_mean(validPolicy * advantage)
+            self.policyLoss = - tf.reduce_mean(tf.clip_by_value(validPolicy, 1e-10, 1.0) * advantage)
 
             self.valueLoss = - tf.reduce_mean(self.value * advantage)
 
