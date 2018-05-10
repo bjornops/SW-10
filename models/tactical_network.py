@@ -10,7 +10,7 @@ class TacticalNetwork(BaseModel):
         self.number_of_actions = 524  # TODO solve number of actions
         self.scope_id = scope_id
         self.build_model()
-        self.init_saver()
+        # self.init_saver()
 
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.
@@ -24,14 +24,16 @@ class TacticalNetwork(BaseModel):
                 self.config.map_name + '/info_fc/biases:0': globalVars[5],
                 self.config.map_name + '/genFc/weights:0': globalVars[6],
                 self.config.map_name + '/genFc/biases:0': globalVars[7],
-                self.config.map_name + '/spPol/weights:0': globalVars[8],
-                self.config.map_name + '/spPol/biases:0': globalVars[9],
-                self.config.map_name + '/feat_fc/weights:0': globalVars[10],
-                self.config.map_name + '/feat_fc/biases:0': globalVars[11],
-                self.config.map_name + '/non_spatial_action/weights:0': globalVars[12],
-                self.config.map_name + '/non_spatial_action/biases:0': globalVars[13],
-                self.config.map_name + '/value/weights:0': globalVars[14],
-                self.config.map_name + '/value/biases:0': globalVars[15]}
+                self.config.map_name + '/feat_fc/weights:0': globalVars[8],
+                self.config.map_name + '/feat_fc/biases:0': globalVars[9],
+                self.config.map_name + '/non_spatial_action/weights:0': globalVars[10],
+                self.config.map_name + '/non_spatial_action/biases:0': globalVars[11],
+                self.config.map_name + '/value/weights:0': globalVars[12],
+                self.config.map_name + '/value/biases:0': globalVars[13],
+                self.config.map_name + '/spPol/weights:0': globalVars[14],
+                self.config.map_name + '/spPol/biases:0': globalVars[15],
+                self.config.map_name + '/sp_fc/weights:0': globalVars[16],
+                self.config.map_name + '/sp_fc/biases:0': globalVars[17]}
 
         self.saver = tf.train.Saver(dict, max_to_keep=self.config.max_to_keep)
 
@@ -50,6 +52,7 @@ class TacticalNetwork(BaseModel):
             self.generalFeatures = tf.placeholder(tf.float32, [None, 11], name='generalFeatures')
             self.buildQueue = tf.placeholder(tf.float32, [None, 5, 7], name='bQueue')
             self.selection = tf.placeholder(tf.float32, [None, 20, 7], name='selection')
+            self.selected_action = tf.placeholder(tf.float32, [None, self.number_of_actions], name='action')
 
             sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]),
                                    num_outputs=16,
@@ -76,19 +79,9 @@ class TacticalNetwork(BaseModel):
                                            activation_fn=tf.tanh,
                                            scope='genFc')
 
-            # Spatial action
-            spatialPolicy = layers.conv2d(sconv2,
-                                          num_outputs=1,
-                                          kernel_size=1,
-                                          stride=1,
-                                          activation_fn=None,
-                                          scope='spPol')
-
-            self.spatialPolicy = tf.nn.softmax(layers.flatten(spatialPolicy))
-
             # Non spatial action and value
-            featFc = tf.concat([layers.flatten(sconv2), infoFc, genFc], axis=1)
-            featFc = layers.fully_connected(featFc,
+            feature_concat = tf.concat([layers.flatten(sconv2), infoFc, genFc], axis=1)
+            featFc = layers.fully_connected(feature_concat,
                                             num_outputs=256,
                                             activation_fn=tf.nn.relu,
                                             scope='feat_fc')
@@ -103,6 +96,25 @@ class TacticalNetwork(BaseModel):
                                                            num_outputs=1,
                                                            activation_fn=None,
                                                            scope='value'), [-1])
+
+            # Output for spatial action
+            spatialPolicy = layers.conv2d(sconv2,
+                                          num_outputs=1,
+                                          kernel_size=1,
+                                          stride=1,
+                                          activation_fn=None,
+                                          scope='spPol')
+
+            spatial_policy_flattened = layers.flatten(spatialPolicy)
+
+            spatial_policy_fc = layers.fully_connected(tf.concat([spatial_policy_flattened,
+                                                                  self.selected_action],
+                                                                 axis=1),
+                                                       num_outputs=self.config.screen_size**2,
+                                                       activation_fn=tf.tanh,
+                                                       scope='sp_fc')
+            self.spatialPolicy = tf.nn.softmax(spatial_policy_fc)
+            # self.spatialPolicy = tf.nn.softmax(layers.flatten(spatialPolicy))
 
     def init_worker_calc_variables(self):
         with tf.variable_scope(self.scope_id):
