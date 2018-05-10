@@ -64,6 +64,7 @@ class StrategicTrainer(BaseTrain):
         gen_features = experience_buffer[:, 5]
         obs_build = experience_buffer[:, 6]
         selections = experience_buffer[:, 7]
+        selected_action_array = experience_buffer[:, 8]
         # stores available actions for each timestep
         action_infos = []
 
@@ -123,6 +124,7 @@ class StrategicTrainer(BaseTrain):
                      self.localNetwork.generalFeatures: np.vstack(gen_features),
                      self.localNetwork.buildQueue: np.vstack(obs_build),
                      self.localNetwork.selection: np.vstack(selections),
+                     self.localNetwork.selected_action: np.vstack(selected_action_array)
                      }
 
         # Generate statistics from our network to periodically save and start the network feed
@@ -232,9 +234,8 @@ class StrategicTrainer(BaseTrain):
 
         gen_features, b_queue, selection = addGeneralFeatures(obs[0])
 
-        action_policy, value, option_timeout = self.session.run([self.localNetwork.actionPolicy,
-                                                                 self.localNetwork.value,
-                                                                 self.localNetwork.timeout],
+        action_policy, value = self.session.run([self.localNetwork.actionPolicy,
+                                                 self.localNetwork.value],
                                                 feed_dict={
                                                     self.localNetwork.screen: screen,
                                                     self.localNetwork.actionInfo: action_info,
@@ -242,12 +243,25 @@ class StrategicTrainer(BaseTrain):
                                                     self.localNetwork.buildQueue: b_queue,
                                                     self.localNetwork.selection: selection,
                                                 })
-        # clip option timeout value [1,100]
-        option_timeout = option_timeout * 100
-        if option_timeout < 1: option_timeout = 1
-        elif option_timeout > 100: option_timeout = 100
 
         selected_tactical = self.select_tactical(action_policy, obs[0])
+        selected_tactical_array = np.zeros((1, self.number_of_actions), dtype=np.float32)
+        # selected_tactical_array = np.zeros(self.number_of_actions)
+        selected_tactical_array[0][selected_tactical] = 1
+        option_timeout = self.session.run([self.localNetwork.timeout],
+                                          feed_dict={
+                                            self.localNetwork.screen: screen,
+                                            self.localNetwork.actionInfo: action_info,
+                                            self.localNetwork.generalFeatures: gen_features,
+                                            self.localNetwork.buildQueue: b_queue,
+                                            self.localNetwork.selection: selection,
+                                            self.localNetwork.selected_action: selected_tactical_array
+                                          })
+
+        # clip option timeout value [1,100]
+        option_timeout = option_timeout[0] * 100
+        if option_timeout < 1: option_timeout = 1
+        elif option_timeout > 100: option_timeout = 100
 
         print("option:" + str(selected_tactical) + ", timeout: " + str(option_timeout))
         reward = 0
@@ -272,7 +286,7 @@ class StrategicTrainer(BaseTrain):
             cur_step += 1
 
         # return experience
-        return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection], done, \
+        return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection, selected_tactical_array], done, \
                screen, action_info, obs
 
     def select_tactical(self, action_policy, obs):

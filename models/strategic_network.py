@@ -50,6 +50,7 @@ class StrategicNetwork(BaseModel):
             self.generalFeatures = tf.placeholder(tf.float32, [None, 11], name='generalFeatures')
             self.buildQueue = tf.placeholder(tf.float32, [None, 5, 7], name='bQueue')
             self.selection = tf.placeholder(tf.float32, [None, 20, 7], name='selection')
+            self.selected_action = tf.placeholder(tf.float32, [None, self.number_of_actions], name='action')
 
             sconv1 = layers.conv2d(tf.transpose(self.screen, [0, 2, 3, 1]),
                                    num_outputs=16,
@@ -94,7 +95,7 @@ class StrategicNetwork(BaseModel):
                                                            activation_fn=None,
                                                            scope='value'), [-1])
 
-            self.timeout = tf.reshape(layers.fully_connected(feat_fc,
+            self.timeout = tf.reshape(layers.fully_connected(tf.concat([feat_fc, self.selected_action], axis=1),
                                                              num_outputs=1,
                                                              activation_fn=tf.nn.relu,
                                                              scope='timeout'), [-1])
