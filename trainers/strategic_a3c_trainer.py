@@ -12,6 +12,7 @@ from pysc2.lib import actions as sc_actions
 from utils.utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures, \
     getAvailableActionsStrat, getAvailableActionsEA, getAvailableActionsBB, getAvailableActionsASCV, \
     getAvailableActionsBS, getAvailableActionsBSCV
+from utils.CSV import StoreAsCSV
 
 
 class StrategicTrainer(BaseTrain):
@@ -26,6 +27,8 @@ class StrategicTrainer(BaseTrain):
         self.number_of_actions = 5  # len(sc_actions.FUNCTIONS)
         self.experience_buffer = []
         self.val = 0
+
+        self.option_log_list = []
 
         # Tensorflow summary writer (for tensorboard)
         self.summaryWriter = tf.summary.FileWriter(os.path.join(self.config.summary_dir, self.config.map_name + "_" + self.config.test_id + "-" + self.name))
@@ -203,6 +206,8 @@ class StrategicTrainer(BaseTrain):
             # makes sure only one of our workers saves the model
             if self.episode_count % 25 == 0 and self.name == 'worker_0':
                 self.localNetwork.save(self.session)
+                StoreAsCSV(self.option_log_list)
+                self.option_log_list = []
 
             mean_reward = np.mean(self.episodeRewards[-1:])
             mean_value = np.mean(self.episodeMeans[-1:])
@@ -264,6 +269,10 @@ class StrategicTrainer(BaseTrain):
             # Check if the minigame has finished
             done = obs[0].last()
             cur_step += 1
+
+        # Adv. log
+        selected_option = [selected_tactical, cur_step, reward, self.episode_count]
+        self.option_log_list.append(selected_option)
 
         # return experience
         return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection], done, \
