@@ -232,7 +232,9 @@ class StrategicTrainer(BaseTrain):
 
         gen_features, b_queue, selection = addGeneralFeatures(obs[0])
 
-        action_policy, value = self.session.run([self.localNetwork.actionPolicy, self.localNetwork.value],
+        action_policy, value, option_timeout = self.session.run([self.localNetwork.actionPolicy,
+                                                                 self.localNetwork.value,
+                                                                 self.localNetwork.timeout],
                                                 feed_dict={
                                                     self.localNetwork.screen: screen,
                                                     self.localNetwork.actionInfo: action_info,
@@ -240,15 +242,19 @@ class StrategicTrainer(BaseTrain):
                                                     self.localNetwork.buildQueue: b_queue,
                                                     self.localNetwork.selection: selection,
                                                 })
+        # clip option timeout value [1,100]
+        option_timeout = option_timeout * 100
+        if option_timeout < 1: option_timeout = 1
+        elif option_timeout > 100: option_timeout = 100
 
         selected_tactical = self.select_tactical(action_policy, obs[0])
 
-        print("option:" + str(selected_tactical))
+        print("option:" + str(selected_tactical) + ", timeout: " + str(option_timeout))
         reward = 0
         done = False
         cur_step = 0
 
-        while not done and cur_step < self.config.option_timeout:
+        while not done and cur_step < option_timeout:
             # Select action from policies
             action, action_exp, spatial_action = self.select_action(selected_tactical,
                                                                     obs[0],
