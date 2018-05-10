@@ -273,7 +273,7 @@ class StrategicTrainer(BaseTrain):
             cur_step += 1
 
         # Adv. log
-        selected_option = [selected_tactical, cur_step, reward]
+        selected_option = [selected_tactical, cur_step, reward, self.episode_count]
         self.option_log_list.append(selected_option)
 
         # return experience
