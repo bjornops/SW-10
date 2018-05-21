@@ -248,7 +248,7 @@ class StrategicTrainer(BaseTrain):
 
         selected_tactical = self.select_tactical(action_policy, obs[0])
 
-        print("option:" + str(selected_tactical))
+        # print("option:" + str(selected_tactical))
         reward = 0
         done = False
         cur_step = 0
