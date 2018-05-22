@@ -250,6 +250,7 @@ class StrategicTrainer(BaseTrain):
 
         # print("option:" + str(selected_tactical))
         reward = 0
+        discounted_reward = 0
         done = False
         cur_step = 0
 
@@ -266,7 +267,7 @@ class StrategicTrainer(BaseTrain):
 
             # Gets reward from current step
             reward += obs[0].reward
-            discounted_reward = obs[0].reward * self.config.gamma**cur_step
+            discounted_reward += obs[0].reward * self.config.gamma**cur_step
             # Check if the minigame has finished
             done = obs[0].last()
             cur_step += 1
