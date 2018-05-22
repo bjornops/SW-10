@@ -266,6 +266,7 @@ class StrategicTrainer(BaseTrain):
 
             # Gets reward from current step
             reward += obs[0].reward
+            discounted_reward = obs[0].reward * self.config.gamma**cur_step
             # Check if the minigame has finished
             done = obs[0].last()
             cur_step += 1
@@ -275,7 +276,7 @@ class StrategicTrainer(BaseTrain):
         self.option_log_list.append(selected_option)
 
         # return experience
-        return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection], done, \
+        return [screen, action_exp, discounted_reward, value[0], spatial_action, gen_features, b_queue, selection], done, \
                screen, action_info, obs
 
     def select_tactical(self, action_policy, obs):
