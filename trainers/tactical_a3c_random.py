@@ -19,7 +19,6 @@ class TacticalTrainer(BaseTrain):
 
         self.name = worker_id
         self.episodeRewards = []
-        self.episodeMeans = []
         self.session = sess
         self.number_of_actions = len(sc_actions.FUNCTIONS)
         self.val = 0
@@ -32,7 +31,6 @@ class TacticalTrainer(BaseTrain):
 
         # Create local network
         self.localNetwork = model
-
         self.globalEpisodes = self.model.global_step_tensor
         self.increment = self.globalEpisodes.assign_add(1)
         self.episode_count = 0
@@ -80,7 +78,6 @@ class TacticalTrainer(BaseTrain):
 
         # When done == true
         self.episodeRewards.append(episode_reward)
-        self.episodeMeans.append(np.mean(episode_values))
         print("Episode: " + str(self.episode_count) + " Reward: " + str(episode_reward))
 
         # Suppress stupid error.
@@ -90,20 +87,10 @@ class TacticalTrainer(BaseTrain):
 
         # save model and statistics.
         if self.episode_count != 0:
-            # makes sure only one of our workers saves the model
-            if self.episode_count % 20 == 0 and self.name == 'worker_0':
-                self.localNetwork.save(self.session)
-
             mean_reward = np.mean(self.episodeRewards[-1:])
-            mean_value = np.mean(self.episodeMeans[-1:])
             summary = tf.Summary()
             summary.value.add(tag='Reward', simple_value=float(mean_reward))
-            summary.value.add(tag='Value', simple_value=float(mean_value))
-            summary.value.add(tag='Value Loss', simple_value=float(value_loss))
-            summary.value.add(tag='Policy Loss', simple_value=float(policy_loss))
-            summary.value.add(tag='Var Norm Loss', simple_value=float(variable_norms))
-            self.summaryWriter.add_summary(summary, self.episode_count)
-
+            self.summaryWriter.add_summary(summary, self.episode_count + 910)
             self.summaryWriter.flush()  # flushes to disk
 
         if self.name == 'worker_0':  # TODO Maybe fix later.
