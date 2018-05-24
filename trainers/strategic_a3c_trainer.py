@@ -65,6 +65,8 @@ class StrategicTrainer(BaseTrain):
         obs_build = experience_buffer[:, 6]
         selections = experience_buffer[:, 7]
         selected_action_array = experience_buffer[:, 8]
+        termination_probability_estimates = experience_buffer[:, 9]
+        termination_probability_targets = experience_buffer[:, 10]
         # stores available actions for each timestep
         action_infos = []
 
@@ -124,7 +126,9 @@ class StrategicTrainer(BaseTrain):
                      self.localNetwork.generalFeatures: np.vstack(gen_features),
                      self.localNetwork.buildQueue: np.vstack(obs_build),
                      self.localNetwork.selection: np.vstack(selections),
-                     self.localNetwork.selected_action: np.vstack(selected_action_array)
+                     self.localNetwork.selected_action: np.vstack(selected_action_array),
+                     self.localNetwork.terminationProbabilityEstimates: np.vstack(termination_probability_estimates),
+                     self.localNetwork.terminationProbabilityTargets: np.vstack(termination_probability_targets)
                      }
 
         # Generate statistics from our network to periodically save and start the network feed
@@ -248,27 +252,15 @@ class StrategicTrainer(BaseTrain):
         selected_tactical_array = np.zeros((1, self.number_of_actions), dtype=np.float32)
         # selected_tactical_array = np.zeros(self.number_of_actions)
         selected_tactical_array[0][selected_tactical] = 1
-        option_timeout = self.session.run([self.localNetwork.timeout],
-                                          feed_dict={
-                                            self.localNetwork.screen: screen,
-                                            self.localNetwork.actionInfo: action_info,
-                                            self.localNetwork.generalFeatures: gen_features,
-                                            self.localNetwork.buildQueue: b_queue,
-                                            self.localNetwork.selection: selection,
-                                            self.localNetwork.selected_action: selected_tactical_array
-                                          })
 
-        # clip option timeout value [1,100]
-        option_timeout = option_timeout[0] * 100
-        if option_timeout < 1: option_timeout = 1
-        elif option_timeout > 100: option_timeout = 100
-
-        print("option:" + str(selected_tactical) + ", timeout: " + str(option_timeout))
+        print("option:" + str(selected_tactical))  # + ", timeout: " + str(option_timeout))
         reward = 0
         done = False
         cur_step = 0
+        termination_probability_estimates = []
+        termination_probability_targets = []
 
-        while not done and cur_step < option_timeout:
+        while not done:
             # Select action from policies
             action, action_exp, spatial_action = self.select_action(selected_tactical,
                                                                     obs[0],
@@ -281,13 +273,53 @@ class StrategicTrainer(BaseTrain):
 
             # Gets reward from current step
             reward += obs[0].reward
-            # Check if the minigame has finished
-            done = obs[0].last()
             cur_step += 1
 
+            # Calculate termination probability
+            termination_probability_estimate = self.session.run([self.localNetwork.terminationProbability],
+                                                      feed_dict={
+                                                          self.localNetwork.screen: screen,
+                                                          self.localNetwork.actionInfo: action_info,
+                                                          self.localNetwork.generalFeatures: gen_features,
+                                                          self.localNetwork.buildQueue: b_queue,
+                                                          self.localNetwork.selection: selection,
+                                                          self.localNetwork.selected_action: selected_tactical_array
+                                                      })
+            termination_probability_estimates.append(termination_probability_estimate)
+            termination_probability = self.termination_probability(cur_step, reward)
+            termination_probability_targets.append(termination_probability)
+
+            # Terminate by end of minigame or by probability
+            if obs[0].last() or self.random_activation(self.clip_value(termination_probability_estimate, 0, 1)):
+                done = True
+
         # return experience
-        return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection, selected_tactical_array], done, \
-               screen, action_info, obs
+        return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection,
+                selected_tactical_array, termination_probability_estimates,
+                termination_probability_targets], done, screen, action_info, obs
+
+    def clip_value(self, value, min, max):
+        if value < min:
+            value = min
+        elif value > max:
+            value = max
+        else:
+            value = value
+        return value
+
+    def random_activation(self, probability):
+        if np.random.rand() <= probability:
+            return True
+        else:
+            return False
+
+    def termination_probability(self, timestep, reward):
+        a = 0.05
+        b = 0.05
+        efficiency = reward / timestep
+        probability = a * timestep - b * efficiency
+        beta = self.clip_value(probability, 0, 1)
+        return beta
 
     def select_tactical(self, action_policy, obs):
         # Find action

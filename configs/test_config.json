@@ -1,7 +1,7 @@
 {
-  "map_name": "CollectMineralShards",
-  "test_id": "Black",
-  "exp_name": "test",
+  "map_name": "BuildMarines_v2",
+  "test_id": "first_20180524",
+  "exp_name": "term_prob",
   "total_episodes": 50,
   "gamma": 0.99,
   "exploration": 1,
