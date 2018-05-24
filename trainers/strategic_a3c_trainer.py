@@ -280,7 +280,7 @@ class StrategicTrainer(BaseTrain):
 
         while not done and cur_step < option_timeout:
             # Select action from policies
-            action, action_exp, spatial_action = self.select_action(selected_tactical,
+            action, action_exp, spatial_action, value = self.select_action(selected_tactical,
                                                                     obs[0],
                                                                     screen,
                                                                     gen_features,
@@ -288,7 +288,7 @@ class StrategicTrainer(BaseTrain):
                                                                     selection)
 
             obs = self.env.step(action)  # Perform action on environment
-
+            
             # Gets reward from current step
             reward += obs[0].reward
             discounted_reward += obs[0].reward * self.config.gamma**cur_step
@@ -340,7 +340,7 @@ class StrategicTrainer(BaseTrain):
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsEA(obs)
             action_info[0, getAvailableActions(obs, "HHExpandArmy2")] = 1
-            tact_action_policy = session.run([tact_net.actionPolicy],
+            tact_action_policy, value = session.run([tact_net.actionPolicy, tact_net.value],
                                              feed_dict={tact_net.screen: screen,
                                                         tact_net.actionInfo: action_info,
                                                         tact_net.generalFeatures: gen_features,
@@ -350,7 +350,7 @@ class StrategicTrainer(BaseTrain):
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsBB(obs)
             action_info[0, getAvailableActions(obs, "HHBuildBarracks")] = 1
-            tact_action_policy = session.run([tact_net1.actionPolicy],
+            tact_action_policy, value = session.run([tact_net1.actionPolicy, tact_net1.value],
                                              feed_dict={tact_net1.screen: screen,
                                                         tact_net1.actionInfo: action_info,
                                                         tact_net1.generalFeatures: gen_features,
@@ -361,7 +361,7 @@ class StrategicTrainer(BaseTrain):
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsASCV(obs)
             action_info[0, getAvailableActions(obs, "HHAssignSCV")] = 1
-            tact_action_policy = session.run([tact_net2.actionPolicy],
+            tact_action_policy, value = session.run([tact_net2.actionPolicy, tact_net2.value],
                                              feed_dict={tact_net2.screen: screen,
                                                         tact_net2.actionInfo: action_info,
                                                         tact_net2.generalFeatures: gen_features,
@@ -372,7 +372,7 @@ class StrategicTrainer(BaseTrain):
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsBS(obs)
             action_info[0, getAvailableActions(obs, "HHBuildSupply")] = 1
-            tact_action_policy = session.run([tact_net3.actionPolicy],
+            tact_action_policy, value = session.run([tact_net3.actionPolicy, tact_net3.value],
                                              feed_dict={tact_net3.screen: screen,
                                                         tact_net3.actionInfo: action_info,
                                                         tact_net3.generalFeatures: gen_features,
@@ -382,7 +382,7 @@ class StrategicTrainer(BaseTrain):
             # returns list of chosen action intersected with pysc available actions (currently available actions)
             v_actions_tact = getAvailableActionsBSCV(obs)
             action_info[0, getAvailableActions(obs, "HHBuildSCV")] = 1
-            tact_action_policy = session.run([tact_net4.actionPolicy],
+            tact_action_policy, value = session.run([tact_net4.actionPolicy, tact_net4.value],
                                              feed_dict={tact_net4.screen: screen,
                                                         tact_net4.actionInfo: action_info,
                                                         tact_net4.generalFeatures: gen_features,
@@ -485,4 +485,4 @@ class StrategicTrainer(BaseTrain):
                 spatial_action = [0]
                 spatial_action[0] = 0
                 act_args.append([0])
-        return [sc_actions.FunctionCall(act_id, act_args)], action_exp, spatial_action
+        return [sc_actions.FunctionCall(act_id, act_args)], action_exp, spatial_action, value
