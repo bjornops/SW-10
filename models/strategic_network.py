@@ -121,7 +121,8 @@ class StrategicNetwork(BaseModel):
             advantage = tf.stop_gradient(self.valueTarget - self.value)
             self.policyLoss = - tf.reduce_mean(validPolicy * advantage)
 
-            self.valueLoss = - tf.reduce_mean(self.value * advantage)
+            # self.valueLoss = - tf.reduce_mean(self.value * advantage)
+            self.valueLoss = tf.losses.mean_squared_error(self.valueTarget, self.value)
             self.timeoutLoss = - tf.reduce_mean(self.timeout * advantage)
 
             self.learningRate = tf.placeholder(tf.float32, None, name='learning_rate')

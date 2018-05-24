@@ -12,6 +12,7 @@ from pysc2.lib import actions as sc_actions
 from utils.utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures, \
     getAvailableActionsStrat, getAvailableActionsEA, getAvailableActionsBB, getAvailableActionsASCV, \
     getAvailableActionsBS, getAvailableActionsBSCV
+from utils.CSV import StoreAsCSV
 
 
 class StrategicTrainer(BaseTrain):
@@ -26,6 +27,8 @@ class StrategicTrainer(BaseTrain):
         self.number_of_actions = 5  # len(sc_actions.FUNCTIONS)
         self.experience_buffer = []
         self.val = 0
+
+        self.option_log_list = []
 
         # Tensorflow summary writer (for tensorboard)
         self.summaryWriter = tf.summary.FileWriter(os.path.join(self.config.summary_dir, self.config.map_name + "_" + self.config.test_id + "-" + self.name))
@@ -205,6 +208,8 @@ class StrategicTrainer(BaseTrain):
             # makes sure only one of our workers saves the model
             if self.episode_count % 25 == 0 and self.name == 'worker_0':
                 self.localNetwork.save(self.session)
+                StoreAsCSV(self.option_log_list)
+                self.option_log_list = []
 
             mean_reward = np.mean(self.episodeRewards[-1:])
             mean_value = np.mean(self.episodeMeans[-1:])
@@ -245,6 +250,7 @@ class StrategicTrainer(BaseTrain):
                                                 })
 
         selected_tactical = self.select_tactical(action_policy, obs[0])
+
         selected_tactical_array = np.zeros((1, self.number_of_actions), dtype=np.float32)
         # selected_tactical_array = np.zeros(self.number_of_actions)
         selected_tactical_array[0][selected_tactical] = 1
@@ -264,7 +270,11 @@ class StrategicTrainer(BaseTrain):
         elif option_timeout > 100: option_timeout = 100
 
         print("option:" + str(selected_tactical) + ", timeout: " + str(option_timeout))
+
+        # print("option:" + str(selected_tactical))
+
         reward = 0
+        discounted_reward = 0
         done = False
         cur_step = 0
 
@@ -281,12 +291,17 @@ class StrategicTrainer(BaseTrain):
 
             # Gets reward from current step
             reward += obs[0].reward
+            discounted_reward += obs[0].reward * self.config.gamma**cur_step
             # Check if the minigame has finished
             done = obs[0].last()
             cur_step += 1
 
+        # Adv. log
+        selected_option = [selected_tactical, cur_step, reward, self.episode_count]
+        self.option_log_list.append(selected_option)
+
         # return experience
-        return [screen, action_exp, reward, value[0], spatial_action, gen_features, b_queue, selection, selected_tactical_array], done, \
+        return [screen, action_exp, discounted_reward, value[0], spatial_action, gen_features, b_queue, selection, selected_tactical_array], done, \
                screen, action_info, obs
 
     def select_tactical(self, action_policy, obs):
@@ -393,60 +408,67 @@ class StrategicTrainer(BaseTrain):
         selected_action_array = np.zeros((1, len(sc_actions.FUNCTIONS)), dtype=np.float32)
         selected_action_array[0][act_id] = 1
 
-        if strat_act_id == 0:
-            spatial_policy = session.run([tact_net.spatialPolicy],
-                                         feed_dict={tact_net.screen: screen,
-                                                    tact_net.generalFeatures: gen_features,
-                                                    tact_net.buildQueue: b_queue,
-                                                    tact_net.selection: selection,
-                                                    tact_net.selected_action: selected_action_array
-                                                    })
-        elif strat_act_id == 1:
-            spatial_policy = session.run([tact_net1.spatialPolicy],
-                                         feed_dict={tact_net1.screen: screen,
-                                                    tact_net1.generalFeatures: gen_features,
-                                                    tact_net1.buildQueue: b_queue,
-                                                    tact_net1.selection: selection,
-                                                    tact_net1.selected_action: selected_action_array})
-        elif strat_act_id == 2:
-            spatial_policy = session.run([tact_net2.spatialPolicy],
-                                         feed_dict={tact_net2.screen: screen,
-                                                    tact_net2.generalFeatures: gen_features,
-                                                    tact_net2.buildQueue: b_queue,
-                                                    tact_net2.selection: selection,
-                                                    tact_net2.selected_action: selected_action_array})
-        elif strat_act_id == 3:
-            spatial_policy = session.run([tact_net3.spatialPolicy],
-                                         feed_dict={tact_net3.screen: screen,
-                                                    tact_net3.generalFeatures: gen_features,
-                                                    tact_net3.buildQueue: b_queue,
-                                                    tact_net3.selection: selection,
-                                                    tact_net3.selected_action: selected_action_array})
-        elif strat_act_id == 4:
-            spatial_policy = session.run([tact_net4.spatialPolicy],
-                                         feed_dict={tact_net4.screen: screen,
-                                                    tact_net4.generalFeatures: gen_features,
-                                                    tact_net4.buildQueue: b_queue,
-                                                    tact_net4.selection: selection,
-                                                    tact_net4.selected_action: selected_action_array})
+        # Check whether coordinates are necessary
+        is_spatial_action = False
+        for arg in sc_actions.FUNCTIONS[act_id].args:
+            if arg.name in ('screen', 'minimap', 'screen2'):
+                is_spatial_action = True
+                
+        if(is_spatial_action):
+            if strat_act_id == 0:
+                spatial_policy = session.run([tact_net.spatialPolicy],
+                                             feed_dict={tact_net.screen: screen,
+                                                        tact_net.generalFeatures: gen_features,
+                                                        tact_net.buildQueue: b_queue,
+                                                        tact_net.selection: selection,
+                                                        tact_net.selected_action: selected_action_array
+                                                        })
+            elif strat_act_id == 1:
+                spatial_policy = session.run([tact_net1.spatialPolicy],
+                                             feed_dict={tact_net1.screen: screen,
+                                                        tact_net1.generalFeatures: gen_features,
+                                                        tact_net1.buildQueue: b_queue,
+                                                        tact_net1.selection: selection,
+                                                        tact_net1.selected_action: selected_action_array})
+            elif strat_act_id == 2:
+                spatial_policy = session.run([tact_net2.spatialPolicy],
+                                             feed_dict={tact_net2.screen: screen,
+                                                        tact_net2.generalFeatures: gen_features,
+                                                        tact_net2.buildQueue: b_queue,
+                                                        tact_net2.selection: selection,
+                                                        tact_net2.selected_action: selected_action_array})
+            elif strat_act_id == 3:
+                spatial_policy = session.run([tact_net3.spatialPolicy],
+                                             feed_dict={tact_net3.screen: screen,
+                                                        tact_net3.generalFeatures: gen_features,
+                                                        tact_net3.buildQueue: b_queue,
+                                                        tact_net3.selection: selection,
+                                                        tact_net3.selected_action: selected_action_array})
+            elif strat_act_id == 4:
+                spatial_policy = session.run([tact_net4.spatialPolicy],
+                                             feed_dict={tact_net4.screen: screen,
+                                                        tact_net4.generalFeatures: gen_features,
+                                                        tact_net4.buildQueue: b_queue,
+                                                        tact_net4.selection: selection,
+                                                        tact_net4.selected_action: selected_action_array})
 
-        # Find spatial action
+            # Find spatial action
 
-        # flatten
-        spatial_action = np.ravel(spatial_policy)
-        spaction = np.random.choice((64 * 64), 1, p=spatial_action)
-        spatial_action = [1, spaction]
-        target = [int(spatial_action[1] // self.screenSize), int(spatial_action[1] % self.screenSize)]
+            # flatten
+            spatial_action = np.ravel(spatial_policy)
+            spaction = np.random.choice((64 * 64), 1, p=spatial_action)
+            spatial_action = [1, spaction]
+            target = [int(spatial_action[1] // self.screenSize), int(spatial_action[1] % self.screenSize)]
 
-        spatial_action[1] = target[0] * self.screenSize + target[1]
+            spatial_action[1] = target[0] * self.screenSize + target[1]
 
-        # define second spatial action Todo find a suitable solution
-        target2 = target[:]
-        target2[0] = int(max(0, min(self.screenSize - 1, target[0] + 6)))
-        target2[1] = int(max(0, min(self.screenSize - 1, target[1] + 6)))
-        if act_id == sc_actions.FUNCTIONS.select_rect.id:
-            target[0] = int(max(0, min(self.screenSize - 1, target[0] - 6)))
-            target[1] = int(max(0, min(self.screenSize - 1, target[1] - 6)))
+            # define second spatial action Todo find a suitable solution
+            target2 = target[:]
+            target2[0] = int(max(0, min(self.screenSize - 1, target[0] + 6)))
+            target2[1] = int(max(0, min(self.screenSize - 1, target[1] + 6)))
+            if act_id == sc_actions.FUNCTIONS.select_rect.id:
+                target[0] = int(max(0, min(self.screenSize - 1, target[0] - 6)))
+                target[1] = int(max(0, min(self.screenSize - 1, target[1] - 6)))
 
         # For experience
         v_actions = getAvailableActionsStrat(obs)
@@ -460,6 +482,7 @@ class StrategicTrainer(BaseTrain):
                 act_args.append([target2[1], target2[0]])
             else:
                 # No spatial action was used
+                spatial_action = [0]
                 spatial_action[0] = 0
                 act_args.append([0])
         return [sc_actions.FunctionCall(act_id, act_args)], action_exp, spatial_action
