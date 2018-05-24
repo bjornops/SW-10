@@ -254,31 +254,15 @@ class StrategicTrainer(BaseTrain):
         selected_tactical_array = np.zeros((1, self.number_of_actions), dtype=np.float32)
         # selected_tactical_array = np.zeros(self.number_of_actions)
         selected_tactical_array[0][selected_tactical] = 1
-        option_timeout = self.session.run([self.localNetwork.timeout],
-                                          feed_dict={
-                                            self.localNetwork.screen: screen,
-                                            self.localNetwork.actionInfo: action_info,
-                                            self.localNetwork.generalFeatures: gen_features,
-                                            self.localNetwork.buildQueue: b_queue,
-                                            self.localNetwork.selection: selection,
-                                            self.localNetwork.selected_action: selected_tactical_array
-                                          })
-
-        # clip option timeout value [1,100]
-        option_timeout = option_timeout[0] * 100
-        if option_timeout < 1: option_timeout = 1
-        elif option_timeout > 100: option_timeout = 100
-
-        print("option:" + str(selected_tactical) + ", timeout: " + str(option_timeout))
-
-        # print("option:" + str(selected_tactical))
 
         reward = 0
         discounted_reward = 0
         done = False
         cur_step = 0
+        state_values = []
+        terminate_option = False
 
-        while not done and cur_step < option_timeout:
+        while not done and not terminate_option:
             # Select action from policies
             action, action_exp, spatial_action, value = self.select_action(selected_tactical,
                                                                     obs[0],
@@ -288,14 +272,22 @@ class StrategicTrainer(BaseTrain):
                                                                     selection)
 
             obs = self.env.step(action)  # Perform action on environment
-            
+            state_values.append(value)
             # Gets reward from current step
             reward += obs[0].reward
             discounted_reward += obs[0].reward * self.config.gamma**cur_step
-            # Check if the minigame has finished
+
+            term_prob = self.termination_probability(cur_step, state_values[0], state_values[-1])
+            # print(str(selected_tactical) + ":" + str(cur_step) + " " + str(term_prob))
             done = obs[0].last()
             cur_step += 1
+            terminate_option = self.random_activation(term_prob)
 
+        avg_value = np.mean(state_values)
+        # self.temp_log[selected_tactical].append(avg_value)
+        print("option:" + str(selected_tactical) + ", timesteps: " + str(cur_step) + ", avg value: " + str(avg_value))
+        print("DeltaV:" + str(state_values[-1] - state_values[0]) + " = " + str(state_values[-1]) + " - " + str(state_values[0]))
+        print("% DeltaV:" + str(state_values[-1] / state_values[0]) + " = " + str(state_values[-1]) + " / " + str(state_values[0]))
         # Adv. log
         selected_option = [selected_tactical, cur_step, reward, self.episode_count]
         self.option_log_list.append(selected_option)
@@ -303,6 +295,30 @@ class StrategicTrainer(BaseTrain):
         # return experience
         return [screen, action_exp, discounted_reward, value[0], spatial_action, gen_features, b_queue, selection, selected_tactical_array], done, \
                screen, action_info, obs
+
+    def clip_value(self, value, min, max):
+        if value < min:
+            value = min
+        elif value > max:
+            value = max
+        else:
+            value = value
+        return value
+
+    def random_activation(self, probability):
+        rand_value = np.random.sample()
+        if rand_value < probability:
+            return True
+        else:
+            return False
+
+    def termination_probability(self, timestep, start_value, end_value):
+        a = 0.02
+        b = 10
+        value_delta = end_value - start_value
+        probability = a * timestep - b * value_delta
+        beta = self.clip_value(probability, 0, 1)
+        return beta
 
     def select_tactical(self, action_policy, obs):
         # Find action
