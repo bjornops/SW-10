@@ -101,7 +101,7 @@ def getAvailableActions(obs, map_name):
         chosenActions = getAvailableActionsBSCV(obs)
     elif map_name == "HHBuildSupply":
         chosenActions = getAvailableActionsBS(obs)
-    elif map_name == "BuildMarines":
+    elif map_name == "BuildMarines" or map_name == "BuildMarines_v2":
         chosenActions = list(set(getAvailableActions(obs, "HHAssignSCV")) |
                              set(getAvailableActions(obs, "HHExpandArmy2")) |
                              set(getAvailableActions(obs, "HHBuildBarracks")) |
