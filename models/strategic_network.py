@@ -124,18 +124,18 @@ class StrategicNetwork(BaseModel):
             self.policyLoss = - tf.reduce_mean(validPolicy * advantage)
 
             self.valueLoss = - tf.reduce_mean(self.value * advantage)
-            # self.terminationProbabilityTargets = []
-            # self.terminationProbabilityEstimates = []
-            # self.terminationProbabilityLoss = tf.losses.mean_pairwise_squared_error(self.terminationProbabilityTargets,
-            #                                                                         self.terminationProbabilityEstimates)
+            self.terminationProbabilityTargets = []
+            self.terminationProbabilityEstimates = []
+            self.terminationProbabilityLoss = tf.losses.mean_pairwise_squared_error(self.terminationProbabilityTargets,
+                                                                                    self.terminationProbabilityEstimates)
 
             self.learningRate = tf.placeholder(tf.float32, None, name='learning_rate')
             # entropy regularization
             self.entropyLoss = - (tf.reduce_sum(self.actionPolicy * tf.log(self.actionPolicy)))
             self.loss = self.policyLoss \
-                        + self.config.value_factor * self.valueLoss
-                        # + self.config.entropy * self.entropyLoss \
-                        # + self.terminationProbabilityLoss * 1  # TODO find appropriate constant
+                        + self.config.value_factor * self.valueLoss \
+                        + self.config.entropy * self.entropyLoss \
+                        + self.terminationProbabilityLoss * 1  # TODO find appropriate constant
 
             optimizer = tf.train.RMSPropOptimizer(self.learningRate, decay=0.99, epsilon=1e-10)
             # Get gradients from local network using local losses
