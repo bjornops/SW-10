@@ -164,6 +164,11 @@ class StrategicTrainer(BaseTrain):
         # Reset minigame
         obs = self.env.reset()
 
+        # Suppress stupid error.
+        value_loss = 0
+        policy_loss = 0
+        variable_norms = 0
+
         # each step
         while not done:
             # perform step, return exp
@@ -171,7 +176,7 @@ class StrategicTrainer(BaseTrain):
             self.experience_buffer.append(exp)
 
             episode_values.append(exp[3])
-            episode_reward += exp[2]
+            episode_reward += exp[9]
 
             if len(self.experience_buffer) >= self.config.buffer_size and not done:
                 # we don't know what our final return is, so we bootstrap from our current value estimation.
@@ -193,11 +198,6 @@ class StrategicTrainer(BaseTrain):
         self.episodeRewards.append(episode_reward)
         self.episodeMeans.append(np.mean(episode_values))
         print("Episode: " + str(self.episode_count) + " Reward: " + str(episode_reward))
-
-        # Suppress stupid error.
-        value_loss = 0
-        policy_loss = 0
-        variable_norms = 0
 
         # Update the network using the experience buffer at the end of the episode.
         if len(self.experience_buffer) != 0:
@@ -293,7 +293,7 @@ class StrategicTrainer(BaseTrain):
         self.option_log_list.append(selected_option)
 
         # return experience
-        return [screen, action_exp, discounted_reward, value[0], spatial_action, gen_features, b_queue, selection, selected_tactical_array], done, \
+        return [screen, action_exp, discounted_reward, value[0], spatial_action, gen_features, b_queue, selection, selected_tactical_array, reward], done, \
                screen, action_info, obs
 
     def clip_value(self, value, min, max):
