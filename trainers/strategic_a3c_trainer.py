@@ -313,10 +313,15 @@ class StrategicTrainer(BaseTrain):
             return False
 
     def termination_probability(self, timestep, start_value, end_value):
-        a = 0.02
-        b = 10
-        value_delta = end_value - start_value
-        probability = a * timestep - b * value_delta
+        a = 0.01
+        b = 20
+        delta_value = end_value - start_value
+        if timestep > 1:
+            delta_time = timestep - 1
+        else:
+            delta_time = 1
+        linear_gradient = delta_value / delta_time
+        probability = a * timestep - b * linear_gradient
         beta = self.clip_value(probability, 0, 1)
         return beta
 
