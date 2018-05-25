@@ -33,9 +33,7 @@ class StrategicNetwork(BaseModel):
                 self.config.map_name + '/non_spatial_action/weights:0': global_vars[10],
                 self.config.map_name + '/non_spatial_action/biases:0': global_vars[11],
                 self.config.map_name + '/value/weights:0': global_vars[12],
-                self.config.map_name + '/value/biases:0': global_vars[13],
-                self.config.map_name + '/timeout/weights:0': global_vars[14],
-                self.config.map_name + '/timeout/biases:0': global_vars[15]}
+                self.config.map_name + '/value/biases:0': global_vars[13]}
         saver = tf.train.Saver(dict)
         saver.save(sess, os.path.join(self.config.checkpoint_dir, self.config.map_name, self.config.map_name +
                                       self.config.test_id + '.cptk'), self.global_step_tensor.eval())
@@ -95,11 +93,6 @@ class StrategicNetwork(BaseModel):
                                                            activation_fn=None,
                                                            scope='value'), [-1])
 
-            self.timeout = tf.reshape(layers.fully_connected(tf.concat([feat_fc, self.selected_action], axis=1),
-                                                             num_outputs=1,
-                                                             activation_fn=tf.nn.relu,
-                                                             scope='timeout'), [-1])
-
     def init_worker_calc_variables(self):
         with tf.variable_scope(self.scope_id):
             # stores which actions were valid at a given time
@@ -123,15 +116,13 @@ class StrategicNetwork(BaseModel):
 
             # self.valueLoss = - tf.reduce_mean(self.value * advantage)
             self.valueLoss = tf.losses.mean_squared_error(self.valueTarget, self.value)
-            self.timeoutLoss = - tf.reduce_mean(self.timeout * advantage)
 
             self.learningRate = tf.placeholder(tf.float32, None, name='learning_rate')
             # entropy regularization
             self.entropyLoss = - (tf.reduce_sum(self.actionPolicy * tf.log(self.actionPolicy)))
             self.loss = self.policyLoss \
                         + self.config.value_factor * self.valueLoss \
-                        + self.config.entropy * self.entropyLoss \
-                        + self.timeoutLoss * 1  # TODO find appropriate constant
+                        + self.config.entropy * self.entropyLoss
 
             optimizer = tf.train.RMSPropOptimizer(self.learningRate, decay=0.99, epsilon=1e-10)
             # Get gradients from local network using local losses
