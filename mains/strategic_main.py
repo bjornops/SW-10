@@ -37,6 +37,7 @@ def main(argv):
     models = []
     for i in range(config.worker_count):
         model = StrategicNetwork(config, "worker_" + str(i) + "_scope")
+        model.init_saver()
         model.init_worker_calc_variables()
         models.append(model)
 
@@ -53,11 +54,15 @@ def main(argv):
 
     # Loading
     if config.load_model:
+        sess.run(tf.global_variables_initializer())
         dict_strategic = load_strategic(config)
         saver_strategic = tf.train.Saver(var_list=dict_strategic, max_to_keep=5)
         pretrained_path = os.path.join(config.pretrained_dir, "strategic")  # "G:/pysc/models/BuildMarinesTBlue2"
         checkpoint = tf.train.get_checkpoint_state(pretrained_path)
         saver_strategic.restore(sess, checkpoint.model_checkpoint_path)
+        print("Loading Strategic Model/Network")
+    else:
+        sess.run(tf.global_variables_initializer())
 
     # Tactical networks
     tactical_networks, dict_tacticals = tactical_network_setup(config)
@@ -99,7 +104,7 @@ def worker_handler(sess, trainers, config, tactical_networks):
         # keep n last saved models
 
     # Initialize global variables
-    sess.run(tf.global_variables_initializer())
+    #sess.run(tf.global_variables_initializer())
 
     # tf class for simple coordinating of threads
     thread_coordinator = tf.train.Coordinator()
