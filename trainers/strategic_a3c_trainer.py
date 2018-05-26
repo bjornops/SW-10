@@ -285,8 +285,8 @@ class StrategicTrainer(BaseTrain):
 
         avg_value = np.mean(state_values)
         # self.temp_log[selected_tactical].append(avg_value)
-        print("option:" + str(selected_tactical) + ", timesteps: " + str(cur_step) + "(" + str(term_prob) + ") " +
-              ", avg value: " + str(avg_value))
+        #print("option:" + str(selected_tactical) + ", timesteps: " + str(cur_step) + "(" + str(term_prob) + ") " +
+        #      ", avg value: " + str(avg_value))
         # print("DeltaV:" + str(state_values[-1] - state_values[0]) + " = " + str(state_values[-1]) + " - " + str(state_values[0]))
         # print("% DeltaV:" + str(state_values[-1] / state_values[0]) + " = " + str(state_values[-1]) + " / " + str(state_values[0]))
         # Adv. log
