@@ -10,6 +10,7 @@ from base.base_train import BaseTrain
 from pysc2.env import sc2_env
 from pysc2.lib import actions as sc_actions
 from utils.utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures, terminate
+from utils.screenshot import grap_screenshot
 
 
 class TacticalTrainer(BaseTrain):
@@ -173,6 +174,8 @@ class TacticalTrainer(BaseTrain):
 
         self.env = self.env_cold_reset()
         obs = self.env.reset()
+
+        grap_screenshot(self.name, self.episode_count)
 
         # each step
         while not done:
