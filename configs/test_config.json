@@ -1,11 +1,11 @@
 {
   "map_name": "HHBuildSupply",
-  "test_id": "vanilla_reset",
+  "test_id": "vanilla_reset_random_2",
   "exp_name": "cold_env_reset",
   "total_episodes": 200,
   "gamma": 0.99,
   "exploration": 1,
-  "worker_count": 1,
+  "worker_count": 2,
   "feature_count": 7,
   "learning_rate": 0.00001,
   "value_factor": 2,
@@ -18,5 +18,7 @@
   "option_timeout": 20,
   "shutdown": false,
   "notify_by_email": false,
-  "email_recipient": "******"
+  "email_recipient": "******",
+  "train_agent": false,
+  "random_tactical": true
 }
