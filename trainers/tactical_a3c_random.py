@@ -90,7 +90,7 @@ class TacticalTrainer(BaseTrain):
             mean_reward = np.mean(self.episodeRewards[-1:])
             summary = tf.Summary()
             summary.value.add(tag='Reward', simple_value=float(mean_reward))
-            self.summaryWriter.add_summary(summary, self.episode_count + 910)
+            self.summaryWriter.add_summary(summary, self.episode_count)
             self.summaryWriter.flush()  # flushes to disk
 
         if self.name == 'worker_0':  # TODO Maybe fix later.
