@@ -150,7 +150,7 @@ class TacticalTrainer(BaseTrain):
     def env_cold_reset(self):
         # Close SC2 environment
         self.env.close()
-        
+
         # Setup sc environment
         game = sc2_env.SC2Env(
             map_name=self.config.map_name,
@@ -163,12 +163,13 @@ class TacticalTrainer(BaseTrain):
         for entry in os.listdir(dir):
             entrypath = os.path.join(dir, entry)
             try:
-                if os.isdir(entrypath):
+                if os.path.isdir(entrypath):
                     shutil.rmtree(entrypath)
                 else:
                     os.unlink(entrypath)
             except Exception as e:
-                print("Could not delete '" + str(entry) + "'")
+                print(str(e))
+                print("Could not delete '" + str(entrypath) + "'")
 
     # Each episode
     def train_epoch(self):
@@ -185,7 +186,7 @@ class TacticalTrainer(BaseTrain):
         # Cold reset the environment
 
         self.env = self.env_cold_reset()
-        # self.delete_temp_files("C:\\Users\\Bjørn\\AppData\\Local\\Temp\\StarCraft II")
+        self.delete_temp_files("C:\\Users\\Bjørn\\AppData\\Local\\Temp\\StarCraft II")
         obs = self.env.reset()
 
         # grap_screenshot(self.name, self.episode_count)
