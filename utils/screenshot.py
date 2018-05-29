@@ -11,10 +11,9 @@ def grap_screenshot(worker_id, episode_number):
     pic = pag.screenshot()
 
     # Set save location
-    my_path = "C:\\Users\\James\\Documents\\GitHub\\SW-10\\experiments\\cold_env_reset\\screenshot"
-
+    my_path = "C:\\Users\\Bjørn\\Documents\\GitHub\\bjornops\\SW-10\\experiments\\cold_env_reset\\screenshot"
     name = "%s_%s_%s.png" % (config.map_name, worker_id, str(episode_number))
-    path = os.path.join(my_path, "%s") % name
+    path = os.path.join(my_path, name)
 
     # Save the image
     pic.save(path)

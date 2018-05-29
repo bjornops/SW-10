@@ -10,6 +10,7 @@ from base.base_train import BaseTrain
 from pysc2.env import sc2_env
 from pysc2.lib import actions as sc_actions
 from utils.utilities import updateNetwork, addFeatureLayers, getAvailableActions, addGeneralFeatures, terminate
+import shutil
 from utils.screenshot import grap_screenshot
 
 
@@ -158,6 +159,17 @@ class TacticalTrainer(BaseTrain):
 
         return game
 
+    def delete_temp_files(self, dir):
+        for entry in os.listdir(dir):
+            entrypath = os.path.join(dir, entry)
+            try:
+                if os.isdir(entrypath):
+                    shutil.rmtree(entrypath)
+                else:
+                    os.unlink(entrypath)
+            except Exception as e:
+                print("Could not delete '" + str(entry) + "'")
+
     # Each episode
     def train_epoch(self):
 
@@ -173,9 +185,10 @@ class TacticalTrainer(BaseTrain):
         # Cold reset the environment
 
         self.env = self.env_cold_reset()
+        # self.delete_temp_files("C:\\Users\\Bjørn\\AppData\\Local\\Temp\\StarCraft II")
         obs = self.env.reset()
 
-        grap_screenshot(self.name, self.episode_count)
+        # grap_screenshot(self.name, self.episode_count)
 
         # each step
         while not done:
