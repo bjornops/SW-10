@@ -51,7 +51,7 @@ def get_scalar_array(event_file, scalar_str):
     ea = event_accumulator.EventAccumulator(event_file)
     ea.Reload()
     lc = np.stack(
-        [np.asarray([scalar.step, scalar.value])
+        [np.asarray([scalar.value])
          for scalar in ea.Scalars(scalar_str)])
     return(lc)
 
