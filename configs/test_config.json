@@ -1,13 +1,13 @@
 {
-  "map_name": "HHBuildSupply",
-  "test_id": "vanilla_reset_random_2",
+  "map_name": "HHBuildBarracks",
+  "test_id": "BuildBarracks_reset_agent",
   "exp_name": "cold_env_reset",
-  "total_episodes": 200,
+  "total_episodes": 601,
   "gamma": 0.99,
   "exploration": 1,
-  "worker_count": 2,
+  "worker_count": 4,
   "feature_count": 7,
-  "learning_rate": 0.00001,
+  "learning_rate": 0.000001,
   "value_factor": 2,
   "entropy": 0,
   "buffer_size": 80,
@@ -19,6 +19,6 @@
   "shutdown": false,
   "notify_by_email": false,
   "email_recipient": "******",
-  "train_agent": false,
-  "random_tactical": true
+  "train_agent": true,
+  "random_tactical": false
 }
