@@ -186,9 +186,10 @@ class TacticalTrainer(BaseTrain):
         # Cold reset the environment
 
         self.env = self.env_cold_reset()
-        self.delete_temp_files("C:\\Users\\Bjørn\\AppData\\Local\\Temp\\StarCraft II")
+        #DELETE TEMP FILES
+        #self.delete_temp_files("C:\\Users\\Bjørn\\AppData\\Local\\Temp\\StarCraft II")
         obs = self.env.reset()
-
+        #TAKE SCREENSHOT
         # grap_screenshot(self.name, self.episode_count)
 
         # each step
