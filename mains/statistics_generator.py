@@ -2,6 +2,7 @@ import numpy as np
 import tensorboard.backend.event_processing.event_accumulator as event_accumulator
 import glob, os
 
+
 def main():
     exp_name = "cold_env_reset"
     exp_dir = summary_path(exp_name)
@@ -16,14 +17,6 @@ def main():
         event_reward_avg = np.average(event_reward_scalar)
         print("Average reward for " + os.path.basename(dir) + " " + str(event_reward_avg))
 
-def calc_event_reward_avg(event_file):
-    ea = event_accumulator.EventAccumulator(event_file)
-    ea.Reload()
-    scalar_str = "Reward"
-    lc = np.stack(
-        [np.asarray([scalar.step, scalar.value])
-         for scalar in ea.Scalars(scalar_str)])
-    return np.average(lc)
 
 def get_event_dirs(exp_dir):
     non_empty_dirs = []
@@ -32,6 +25,7 @@ def get_event_dirs(exp_dir):
         if os.path.isdir(entry_path) and (len(os.listdir(entry_path)) > 0):
             non_empty_dirs.append(entry_path)
     return non_empty_dirs
+
 
 def summary_path(exp_name):
     cur_dir = os.getcwd()
@@ -42,10 +36,12 @@ def summary_path(exp_name):
     else:
         raise Exception("'" + exp_summary_dir + "' is not a directory.")
 
+
 def get_event(dir_path):
     return max(
         glob.glob('{}/*'.format(dir_path)),
         key=os.path.getctime)
+
 
 def get_scalar_array(event_file, scalar_str):
     ea = event_accumulator.EventAccumulator(event_file)
@@ -53,8 +49,8 @@ def get_scalar_array(event_file, scalar_str):
     lc = np.stack(
         [np.asarray([scalar.value])
          for scalar in ea.Scalars(scalar_str)])
-    return(lc)
+    return lc
+
 
 if __name__ == '__main__':
     main()
-
